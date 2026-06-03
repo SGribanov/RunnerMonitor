@@ -1,0 +1,33 @@
+package app
+
+import "strings"
+
+func AuditRunner(r Runner) (decision string, evidence string) {
+	if r.Busy {
+		return "keep", "runner is currently busy"
+	}
+	if r.QueueCount > 0 {
+		return "investigate", "repo has queued jobs; check labels/routes before removal"
+	}
+	if r.GitHubStatus == "online" && (r.LocalState == "running" || r.LocalState == "active") {
+		return "keep", "service-managed and online"
+	}
+	if r.GitHubStatus == "online" && r.ControlMode == "manual" {
+		return "investigate", "online in GitHub but not service-managed locally"
+	}
+	if r.GitHubStatus == "unknown" && isInactiveOrManual(r.LocalState) {
+		return "candidate-remove", "local configured runner not visible in GitHub API"
+	}
+	if r.GitHubStatus == "offline" && isInactiveOrManual(r.LocalState) {
+		return "candidate-remove", "offline/manual runner"
+	}
+	if r.LocalState == "inactive" {
+		return "candidate-remove", "inactive service"
+	}
+	return "investigate", "state needs manual review"
+}
+
+func isInactiveOrManual(state string) bool {
+	state = strings.ToLower(state)
+	return state == "manual" || state == "inactive" || state == "configured" || state == "unknown" || state == ""
+}
