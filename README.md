@@ -11,6 +11,7 @@ standard service mechanisms such as Windows Services, Linux systemd, and SSH.
 - Auto-discover GitHub Actions runner directories from local Windows and WSL.
 - Merge local lifecycle state with GitHub runner status through `gh api`.
 - Show queued and stale queued workflow counts per repository.
+- Show the project each runner belongs to in the TUI/audit tables.
 - Control service-managed runners with short commands such as `start 1`,
   `stop 1`, and `restart 1`.
 - Keep runner folder migration and OneDev support as follow-up phases.

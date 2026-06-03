@@ -67,8 +67,13 @@ Post-removal audit no longer lists that runner.
 `/home/gsv777/newgen-runner` after backup
 `/home/gsv777/runner-backups/newgen-runner-newgen-wsl-linux-2026-06-03.tar.gz`.
 GitHub API already showed zero active runners for `SGribanov/NewGenOsEngine`.
-Post-removal audit no longer lists that runner. The systemd unit remains enabled
-until an interactive sudo cleanup is performed.
+Post-removal audit no longer lists that runner.
+
+## 2026-06-03 -- WSL unit cleanup completed
+
+The stale `actions.runner.SGribanov-NewGenOsEngine.newgen-wsl-linux.service`
+unit was manually removed from WSL with sudo. Current WSL unit inventory only
+shows the remaining DeltaG WSL runner service.
 
 ## 2026-06-03 -- Manual startup policy
 

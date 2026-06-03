@@ -6,6 +6,9 @@ func AuditRunner(r Runner) (decision string, evidence string) {
 	if r.Busy {
 		return "keep", "runner is currently busy"
 	}
+	if r.Path == "(unit only)" {
+		return "candidate-remove", "orphan service unit without runner directory"
+	}
 	if r.QueueCount > 0 {
 		return "investigate", "repo has queued jobs; check labels/routes before removal"
 	}

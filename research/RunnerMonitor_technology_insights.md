@@ -45,3 +45,9 @@ permissions if the command blindly calls `Start-Service` or `systemctl start`.
 RunnerMonitor should short-circuit `start` when local state is already
 `running` or `active`, returning `already running` instead of invoking privileged
 service control.
+
+## 2026-06-03 -- Project column
+
+The TUI/audit table should show the project explicitly. A short `Project` column
+derived from the GitHub repo name is easier to scan than only showing the full
+`owner/repo` string.

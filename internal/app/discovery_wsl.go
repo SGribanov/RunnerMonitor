@@ -33,7 +33,64 @@ func discoverWSLRunners() ([]Runner, error) {
 		}
 		runners = append(runners, runner)
 	}
+	runners = append(runners, discoverWSLUnitOnlyRunners(runners)...)
 	return runners, nil
+}
+
+func discoverWSLUnitOnlyRunners(existing []Runner) []Runner {
+	knownServices := map[string]bool{}
+	for _, runner := range existing {
+		if runner.ServiceName != "" {
+			knownServices[runner.ServiceName] = true
+		}
+	}
+
+	out, err := exec.Command("wsl.exe", "sh", "-lc", "systemctl list-unit-files 'actions.runner.*.service' --no-legend --no-pager").Output()
+	if err != nil {
+		return nil
+	}
+
+	var runners []Runner
+	for _, line := range strings.Split(string(out), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) == 0 {
+			continue
+		}
+		serviceName := fields[0]
+		if knownServices[serviceName] {
+			continue
+		}
+		repo, name := repoAndRunnerFromActionsService(serviceName)
+		if repo == "" || name == "" {
+			continue
+		}
+		runners = append(runners, Runner{
+			Name:         name,
+			Repo:         repo,
+			Host:         "wsl:Ubuntu",
+			Transport:    "wsl",
+			Path:         "(unit only)",
+			ServiceName:  serviceName,
+			ControlMode:  "wsl-systemd",
+			LocalState:   wslServiceState(serviceName),
+			GitHubStatus: "unknown",
+		})
+	}
+	return runners
+}
+
+func repoAndRunnerFromActionsService(serviceName string) (string, string) {
+	name := strings.TrimSuffix(serviceName, ".service")
+	name = strings.TrimPrefix(name, "actions.runner.")
+	parts := strings.SplitN(name, ".", 2)
+	if len(parts) != 2 {
+		return "", ""
+	}
+	ownerRepo := strings.SplitN(parts[0], "-", 2)
+	if len(ownerRepo) != 2 {
+		return "", ""
+	}
+	return ownerRepo[0] + "/" + ownerRepo[1], parts[1]
 }
 
 func wslCat(file string) string {

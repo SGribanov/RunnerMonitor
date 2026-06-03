@@ -22,16 +22,11 @@ must not be executed without explicit approval.
 | `SGribanov/NewGenOsEngine` | `newgenosengine-windows-local` | `C:\actions-runner-newgenosengine` | `C:\Runners-backup\actions-runner-newgenosengine-windows-local-2026-06-03.zip` |
 | `SGribanov/NewGenOsEngine` | `newgen-wsl-linux` | `/home/gsv777/newgen-runner` | `/home/gsv777/runner-backups/newgen-runner-newgen-wsl-linux-2026-06-03.tar.gz` |
 
-## Remaining Elevated Cleanup
+## Resolved Elevated Cleanup
 
-The `newgen-wsl-linux` runner folder was removed, but its systemd unit remains
-enabled because `sudo -n` reported that a password is required.
-
-```powershell
-wsl.exe sudo systemctl disable actions.runner.SGribanov-NewGenOsEngine.newgen-wsl-linux.service
-wsl.exe sudo rm -f /etc/systemd/system/actions.runner.SGribanov-NewGenOsEngine.newgen-wsl-linux.service
-wsl.exe sudo systemctl daemon-reload
-```
+The `newgen-wsl-linux` runner folder was removed first. Its systemd unit was
+then removed manually from WSL with sudo. Current WSL unit list no longer shows
+`actions.runner.SGribanov-NewGenOsEngine.newgen-wsl-linux.service`.
 
 ## Keep
 

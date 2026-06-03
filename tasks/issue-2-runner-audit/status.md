@@ -16,7 +16,7 @@
 - Created backup `C:\Runners-backup\actions-runner-newgenosengine-windows-local-2026-06-03.zip`.
 - Removed approved runner `newgen-wsl-linux` at `/home/gsv777/newgen-runner`.
 - Created backup `/home/gsv777/runner-backups/newgen-runner-newgen-wsl-linux-2026-06-03.tar.gz`.
-- Could not remove its WSL systemd unit without sudo password; unit cleanup remains elevated.
+- WSL systemd unit cleanup was completed manually; `actions.runner.SGribanov-NewGenOsEngine.newgen-wsl-linux.service` is no longer present.
 
 ## Current audit snapshot
 
@@ -27,7 +27,7 @@
 ## Next
 
 - Operator decides which remaining `candidate-remove` runners are actually safe to remove.
-- Elevated cleanup remains for stale WSL unit `actions.runner.SGribanov-NewGenOsEngine.newgen-wsl-linux.service`.
+- Operator decides which remaining `candidate-remove` runners are actually safe to remove.
 
 ## Blockers
 

@@ -71,6 +71,20 @@ func TestAuditRunnerInvestigatesQueuedRepo(t *testing.T) {
 	}
 }
 
+func TestAuditRunnerFlagsUnitOnlyRunner(t *testing.T) {
+	decision, evidence := AuditRunner(Runner{Name: "unit-only", Path: "(unit only)", LocalState: "inactive"})
+	if decision != "candidate-remove" || evidence != "orphan service unit without runner directory" {
+		t.Fatalf("decision/evidence = %q/%q", decision, evidence)
+	}
+}
+
+func TestRepoAndRunnerFromActionsService(t *testing.T) {
+	repo, name := repoAndRunnerFromActionsService("actions.runner.SGribanov-NewGenOsEngine.newgen-wsl-linux.service")
+	if repo != "SGribanov/NewGenOsEngine" || name != "newgen-wsl-linux" {
+		t.Fatalf("repo/name = %q/%q", repo, name)
+	}
+}
+
 func TestRunRepoLifecycleSkipsManualRunner(t *testing.T) {
 	got := RunRepoLifecycle("start", "SGribanov/RunnerMonitor", Inventory{Runners: []Runner{{
 		Name: "manual", Repo: "SGribanov/RunnerMonitor",

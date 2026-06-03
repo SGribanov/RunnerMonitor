@@ -16,6 +16,7 @@ Milestone 2: TUI commands.
 - Added local Windows runner discovery from `.runner` files and Windows services.
 - Added WSL runner discovery from `.runner` files and `.service` hints.
 - Added GitHub API status merge and queued/stale workflow counts.
+- TUI/audit tables now show an explicit `Project` column.
 - Added TUI commands: `refresh`, `start N`, `stop N`, `restart N`, `logs N`, `q`.
 - Added `--once` smoke mode.
 - Added `--audit`, `--start-repo`, `--stop-repo`, `--restart-repo`, and `--disable-autostart`.
