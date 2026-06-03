@@ -197,3 +197,19 @@ and `externals.2.334.0` under the new root before `svc.sh install` could find
 the runner online/busy=false, `runner-monitor --audit` showed `keep`, and
 `--start-current` from `C:\Repos\MyCloneOsEngine` returned both MyClone runners
 already running.
+
+## 2026-06-03 -- DeltaG WSL runner move
+
+`SGribanov/DeltaG deltag-linux-wsl` was moved from
+`/home/gsv777/actions-runner-deltag` to
+`/home/gsv777/Runners/SGribanov-DeltaG/deltag-linux-wsl` after backup
+`/home/gsv777/runner-backups/actions-runner-deltag-deltag-linux-wsl-move-2026-06-03.tar.gz`.
+The runner folder was about 11 GB, so the backup tar step took several minutes;
+checking the active `tar` process and archive size was the right way to
+distinguish a long backup from a hung migration. After `svc.sh uninstall`,
+moving the folder, recreating `bin` and `externals` symlinks to the versioned
+folders under the new root, and reinstalling via `svc.sh install gsv777`, the
+systemd unit started with `ExecStart` under the new path. GitHub reported both
+DeltaG runners online/busy=false, and `--start-current` from `C:\Repos\DeltaG`
+returned both DeltaG runners already running. The repo still reports a stale
+queued run, but this is now decoupled from local runner folder placement.

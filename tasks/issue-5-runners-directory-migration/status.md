@@ -5,8 +5,8 @@
 
 - Issue #5 created.
 - Fresh audit shows all current runners are `keep`.
-- DeltaG Windows and WSL runners are currently busy, so they are not migration
-  candidates until idle.
+- DeltaG Windows and WSL runners are online and `busy=false`; both still show
+  stale queue evidence from GitHub, but local capacity is available.
 - Migrated `SGribanov/BackTester backtester-runner` from
   `C:\actions-runner-backtester` to
   `C:\Runners\SGribanov-BackTester\backtester-runner`.
@@ -53,18 +53,35 @@
   - `runner-monitor --audit` shows MyClone Linux as `keep`;
   - from `C:\Repos\MyCloneOsEngine`, `--start-current` returns both MyClone
     runners already running.
-- Candidate first moves, after explicit approval:
-  - `SGribanov/IdeaBox ideabox-runner` if admin rights are available
+- Migrated `SGribanov/DeltaG deltag-linux-wsl` from
+  `/home/gsv777/actions-runner-deltag` to
+  `/home/gsv777/Runners/SGribanov-DeltaG/deltag-linux-wsl`.
+- Created backup:
+  `/home/gsv777/runner-backups/actions-runner-deltag-deltag-linux-wsl-move-2026-06-03.tar.gz`.
+- Reinstalled WSL systemd service from the new path:
+  `actions.runner.SGribanov-DeltaG.deltag-linux-wsl.service`.
+- Fixed post-move runner symlinks:
+  - `bin` -> `/home/gsv777/Runners/SGribanov-DeltaG/deltag-linux-wsl/bin.2.334.0`
+  - `externals` -> `/home/gsv777/Runners/SGribanov-DeltaG/deltag-linux-wsl/externals.2.334.0`
+- Validation passed:
+  - service is `active`;
+  - process path is under `/home/gsv777/Runners/SGribanov-DeltaG/deltag-linux-wsl`;
+  - GitHub reports `deltag-linux-wsl` online and `busy=false`;
+  - `runner-monitor --audit` still shows DeltaG stale queue investigation;
+  - from `C:\Repos\DeltaG`, `--start-current` returns both DeltaG runners
+    already running.
 
 ## Next
 
-- Continue with the next non-busy runner, preferably
-  `SGribanov/IdeaBox ideabox-runner` if admin rights are available.
+- Continue with the next non-busy runner.
+- Windows service moves (`IdeaBox`, `DeltaG Windows`) require elevated
+  PowerShell; current shell is not elevated.
+- `SGribanov/AU windows-local` has no GitHub runner binding at the moment, so
+  it needs re-registration or a fresh GitHub runner attach before normal move
+  validation can pass.
 - Include junction/symlink retargeting after every moved runner folder.
 
 ## Blockers
 
-- Runner moves are intentionally blocked until explicit runner-by-runner
-  approval.
 - Windows service moves may require elevated PowerShell.
 - WSL systemd moves require sudo.

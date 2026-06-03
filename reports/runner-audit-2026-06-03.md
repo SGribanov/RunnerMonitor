@@ -28,6 +28,7 @@ new explicit approval naming repo, runner, host, and path.
 | `SGribanov/MyCloneOsEngine` | `mycloneosengine-linux` | `/home/gsv777/Runners/SGribanov-MyCloneOsEngine/mycloneosengine-linux` | Reconfigured with GitHub runner id `24`; later moved from `/home/gsv777/myclone-runner-linux`; backup `/home/gsv777/runner-backups/myclone-runner-linux-mycloneosengine-linux-move-2026-06-03.tar.gz`; fixed `bin`/`externals` symlinks; systemd unit active/enabled from new path. |
 | `SGribanov/BackTester` | `backtester-runner` | `C:\Runners\SGribanov-BackTester\backtester-runner` | Moved from `C:\actions-runner-backtester`; backup `C:\Runners-backup\actions-runner-backtester-backtester-runner-2026-06-03.zip`; fixed `bin`/`externals` junctions; GitHub online. |
 | `SGribanov/MyCloneOsEngine` | `mycloneosengine-windows-local` | `C:\Runners\SGribanov-MyCloneOsEngine\mycloneosengine-windows-local` | Moved from `C:\actions-runner-mycloneosengine`; backup `C:\Runners-backup\actions-runner-mycloneosengine-mycloneosengine-windows-local-2026-06-03.zip`; fixed `bin`/`externals` junctions; GitHub online. |
+| `SGribanov/DeltaG` | `deltag-linux-wsl` | `/home/gsv777/Runners/SGribanov-DeltaG/deltag-linux-wsl` | Moved from `/home/gsv777/actions-runner-deltag`; backup `/home/gsv777/runner-backups/actions-runner-deltag-deltag-linux-wsl-move-2026-06-03.tar.gz`; fixed `bin`/`externals` symlinks; systemd unit active/enabled from new path; GitHub online. |
 
 ## Resolved Elevated Cleanup
 
@@ -44,13 +45,14 @@ then removed manually from WSL with sudo. Current WSL unit list no longer shows
 | `SGribanov/IdeaBox` | `ideabox-runner` | local Windows | Service-managed and GitHub online. |
 | `SGribanov/MyCloneOsEngine` | `mycloneosengine-windows-local` | local Windows | Manual `run.cmd` runner is running from `C:\Runners\SGribanov-MyCloneOsEngine\mycloneosengine-windows-local`, GitHub online, and controllable by RunnerMonitor. |
 | `SGribanov/MyCloneOsEngine` | `mycloneosengine-linux` | WSL Ubuntu | Service-managed from `/home/gsv777/Runners/SGribanov-MyCloneOsEngine/mycloneosengine-linux`, systemd active, GitHub online. |
+| `SGribanov/DeltaG` | `deltag-linux-wsl` | WSL Ubuntu | Service-managed from `/home/gsv777/Runners/SGribanov-DeltaG/deltag-linux-wsl`, systemd active, GitHub online, and controllable by RunnerMonitor. |
 
 ## Investigate Before Any Cleanup
 
 | Repo | Runner | Host | Evidence | Suggested action |
 |---|---|---|---|---|
 | `SGribanov/DeltaG` | `deltag-win` | local Windows | Running, GitHub online, repo has `1/1 stale` queued jobs. | Keep for now; investigate queued job label/routing first. |
-| `SGribanov/DeltaG` | `deltag-linux-wsl` | WSL Ubuntu | Active, GitHub online, repo has `1/1 stale` queued jobs. | Keep for now; investigate queued job label/routing first. |
+| `SGribanov/DeltaG` | `deltag-linux-wsl` | WSL Ubuntu | Active from the new `Runners` path, GitHub online, repo has `1/1 stale` queued jobs. | Keep; investigate queued job label/routing separately from folder migration. |
 
 ### DeltaG Stale Queue Detail
 
