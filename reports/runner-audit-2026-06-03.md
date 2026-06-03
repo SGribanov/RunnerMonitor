@@ -20,6 +20,18 @@ must not be executed without explicit approval.
 | `SGribanov/DeltaG` | `legion-ubuntu-wsl-x64` | `/home/gsv777/actions-runner-linux-x64` | `/home/gsv777/runner-backups/actions-runner-linux-x64-legion-ubuntu-wsl-x64-2026-06-03.tar.gz` |
 | `SGribanov/DeltaG` | `legion-windows-x64` | `C:\actions-runner-win-x64` | `C:\Runners-backup\actions-runner-win-x64-legion-windows-x64-2026-06-03.zip` |
 | `SGribanov/NewGenOsEngine` | `newgenosengine-windows-local` | `C:\actions-runner-newgenosengine` | `C:\Runners-backup\actions-runner-newgenosengine-windows-local-2026-06-03.zip` |
+| `SGribanov/NewGenOsEngine` | `newgen-wsl-linux` | `/home/gsv777/newgen-runner` | `/home/gsv777/runner-backups/newgen-runner-newgen-wsl-linux-2026-06-03.tar.gz` |
+
+## Remaining Elevated Cleanup
+
+The `newgen-wsl-linux` runner folder was removed, but its systemd unit remains
+enabled because `sudo -n` reported that a password is required.
+
+```powershell
+wsl.exe sudo systemctl disable actions.runner.SGribanov-NewGenOsEngine.newgen-wsl-linux.service
+wsl.exe sudo rm -f /etc/systemd/system/actions.runner.SGribanov-NewGenOsEngine.newgen-wsl-linux.service
+wsl.exe sudo systemctl daemon-reload
+```
 
 ## Keep
 
@@ -68,24 +80,9 @@ wsl.exe sh -lc 'systemctl list-unit-files "actions.runner.*.service" --no-pager 
 wsl.exe sh -lc 'rm -rf /home/gsv777/myclone-runner-linux'
 ```
 
-### `SGribanov/NewGenOsEngine` -- `newgen-wsl-linux`
-
-Path: `/home/gsv777/newgen-runner`
-
-```powershell
-# Service exists and is inactive; disable/remove service only after approval.
-wsl.exe sudo systemctl disable actions.runner.SGribanov-NewGenOsEngine.newgen-wsl-linux.service
-wsl.exe sudo rm -f /etc/systemd/system/actions.runner.SGribanov-NewGenOsEngine.newgen-wsl-linux.service
-wsl.exe sudo systemctl daemon-reload
-
-wsl.exe sh -lc 'mkdir -p ~/runner-backups && tar -czf ~/runner-backups/newgen-runner.tar.gz -C /home/gsv777 newgen-runner'
-wsl.exe sh -lc 'rm -rf /home/gsv777/newgen-runner'
-```
-
 ## Approval Needed
 
 Deletion requires explicit approval naming each runner:
 
 - `SGribanov/AU windows-local C:\actions-runner`
 - `SGribanov/MyCloneOsEngine mycloneosengine-linux /home/gsv777/myclone-runner-linux`
-- `SGribanov/NewGenOsEngine newgen-wsl-linux /home/gsv777/newgen-runner`

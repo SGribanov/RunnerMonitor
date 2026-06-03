@@ -14,16 +14,20 @@
 - Created backup `C:\Runners-backup\actions-runner-win-x64-legion-windows-x64-2026-06-03.zip`.
 - Removed approved runner `newgenosengine-windows-local` at `C:\actions-runner-newgenosengine`.
 - Created backup `C:\Runners-backup\actions-runner-newgenosengine-windows-local-2026-06-03.zip`.
+- Removed approved runner `newgen-wsl-linux` at `/home/gsv777/newgen-runner`.
+- Created backup `/home/gsv777/runner-backups/newgen-runner-newgen-wsl-linux-2026-06-03.tar.gz`.
+- Could not remove its WSL systemd unit without sudo password; unit cleanup remains elevated.
 
 ## Current audit snapshot
 
-- Candidate remove: `windows-local`, `mycloneosengine-linux`, `newgen-wsl-linux`.
+- Candidate remove: `windows-local`, `mycloneosengine-linux`.
 - Investigate: `backtester-runner`, DeltaG runners with queued jobs, `mycloneosengine-windows-local`.
 - Keep: `ideabox-runner`.
 
 ## Next
 
 - Operator decides which remaining `candidate-remove` runners are actually safe to remove.
+- Elevated cleanup remains for stale WSL unit `actions.runner.SGribanov-NewGenOsEngine.newgen-wsl-linux.service`.
 
 ## Blockers
 

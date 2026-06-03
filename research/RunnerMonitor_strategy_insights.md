@@ -61,6 +61,15 @@ from `C:\actions-runner-newgenosengine` after backup
 GitHub API already showed zero active runners for `SGribanov/NewGenOsEngine`.
 Post-removal audit no longer lists that runner.
 
+## 2026-06-03 -- Fourth approved removal
+
+`newgen-wsl-linux` was explicitly approved for deletion and removed from
+`/home/gsv777/newgen-runner` after backup
+`/home/gsv777/runner-backups/newgen-runner-newgen-wsl-linux-2026-06-03.tar.gz`.
+GitHub API already showed zero active runners for `SGribanov/NewGenOsEngine`.
+Post-removal audit no longer lists that runner. The systemd unit remains enabled
+until an interactive sudo cleanup is performed.
+
 ## 2026-06-03 -- Manual startup policy
 
 Runners should not auto-start at boot. The desired workflow is for Codex or the
