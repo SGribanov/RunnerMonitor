@@ -36,15 +36,31 @@
   - `runner-monitor --audit` shows MyClone Windows as `keep`;
   - from `C:\Repos\MyCloneOsEngine`, `--start-current` returns both MyClone
     runners already running.
+- Migrated `SGribanov/MyCloneOsEngine mycloneosengine-linux` from
+  `/home/gsv777/myclone-runner-linux` to
+  `/home/gsv777/Runners/SGribanov-MyCloneOsEngine/mycloneosengine-linux`.
+- Created backup:
+  `/home/gsv777/runner-backups/myclone-runner-linux-mycloneosengine-linux-move-2026-06-03.tar.gz`.
+- Reinstalled WSL systemd service from the new path:
+  `actions.runner.SGribanov-MyCloneOsEngine.mycloneosengine-linux.service`.
+- Fixed post-move runner symlinks:
+  - `bin` -> `/home/gsv777/Runners/SGribanov-MyCloneOsEngine/mycloneosengine-linux/bin.2.334.0`
+  - `externals` -> `/home/gsv777/Runners/SGribanov-MyCloneOsEngine/mycloneosengine-linux/externals.2.334.0`
+- Validation passed:
+  - service is `active`;
+  - process path is under `/home/gsv777/Runners/SGribanov-MyCloneOsEngine/mycloneosengine-linux`;
+  - GitHub reports `mycloneosengine-linux` online and `busy=false`;
+  - `runner-monitor --audit` shows MyClone Linux as `keep`;
+  - from `C:\Repos\MyCloneOsEngine`, `--start-current` returns both MyClone
+    runners already running.
 - Candidate first moves, after explicit approval:
-  - `SGribanov/MyCloneOsEngine mycloneosengine-linux`
   - `SGribanov/IdeaBox ideabox-runner` if admin rights are available
 
 ## Next
 
 - Continue with the next non-busy runner, preferably
-  `SGribanov/MyCloneOsEngine mycloneosengine-linux`.
-- Include junction retargeting after every Windows runner folder move.
+  `SGribanov/IdeaBox ideabox-runner` if admin rights are available.
+- Include junction/symlink retargeting after every moved runner folder.
 
 ## Blockers
 

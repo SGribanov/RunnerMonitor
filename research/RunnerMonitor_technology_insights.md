@@ -180,3 +180,20 @@ They were retargeted to `bin.2.334.0` and `externals.2.334.0` under the new
 root before starting the runner. GitHub reported the runner online/busy=false,
 and `--start-current` from `C:\Repos\MyCloneOsEngine` returned both MyClone
 runners already running.
+
+## 2026-06-03 -- MyClone WSL runner move
+
+`SGribanov/MyCloneOsEngine mycloneosengine-linux` was moved from
+`/home/gsv777/myclone-runner-linux` to
+`/home/gsv777/Runners/SGribanov-MyCloneOsEngine/mycloneosengine-linux` after
+backup
+`/home/gsv777/runner-backups/myclone-runner-linux-mycloneosengine-linux-move-2026-06-03.tar.gz`.
+The old `svc.sh uninstall` removed the systemd unit, then `svc.sh install
+gsv777` from the new path recreated it with `ExecStart` and `WorkingDirectory`
+under the new root. As on Windows, the moved runner had path-sensitive
+`bin`/`externals` links; they needed to be recreated to point to `bin.2.334.0`
+and `externals.2.334.0` under the new root before `svc.sh install` could find
+`bin/actions.runner.service.template`. After `svc.sh start`, GitHub reported
+the runner online/busy=false, `runner-monitor --audit` showed `keep`, and
+`--start-current` from `C:\Repos\MyCloneOsEngine` returned both MyClone runners
+already running.

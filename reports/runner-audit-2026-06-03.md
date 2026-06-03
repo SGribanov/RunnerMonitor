@@ -25,7 +25,7 @@ new explicit approval naming repo, runner, host, and path.
 
 | Repo | Runner | Path | Result |
 |---|---|---|---|
-| `SGribanov/MyCloneOsEngine` | `mycloneosengine-linux` | `/home/gsv777/myclone-runner-linux` | Reconfigured with GitHub runner id `24`; systemd unit `actions.runner.SGribanov-MyCloneOsEngine.mycloneosengine-linux.service` is active/enabled. |
+| `SGribanov/MyCloneOsEngine` | `mycloneosengine-linux` | `/home/gsv777/Runners/SGribanov-MyCloneOsEngine/mycloneosengine-linux` | Reconfigured with GitHub runner id `24`; later moved from `/home/gsv777/myclone-runner-linux`; backup `/home/gsv777/runner-backups/myclone-runner-linux-mycloneosengine-linux-move-2026-06-03.tar.gz`; fixed `bin`/`externals` symlinks; systemd unit active/enabled from new path. |
 | `SGribanov/BackTester` | `backtester-runner` | `C:\Runners\SGribanov-BackTester\backtester-runner` | Moved from `C:\actions-runner-backtester`; backup `C:\Runners-backup\actions-runner-backtester-backtester-runner-2026-06-03.zip`; fixed `bin`/`externals` junctions; GitHub online. |
 | `SGribanov/MyCloneOsEngine` | `mycloneosengine-windows-local` | `C:\Runners\SGribanov-MyCloneOsEngine\mycloneosengine-windows-local` | Moved from `C:\actions-runner-mycloneosengine`; backup `C:\Runners-backup\actions-runner-mycloneosengine-mycloneosengine-windows-local-2026-06-03.zip`; fixed `bin`/`externals` junctions; GitHub online. |
 
@@ -43,7 +43,7 @@ then removed manually from WSL with sudo. Current WSL unit list no longer shows
 | `SGribanov/BackTester` | `backtester-runner` | local Windows | Manual `run.cmd` runner is running from `C:\Runners\SGribanov-BackTester\backtester-runner`, GitHub online, and controllable by RunnerMonitor. |
 | `SGribanov/IdeaBox` | `ideabox-runner` | local Windows | Service-managed and GitHub online. |
 | `SGribanov/MyCloneOsEngine` | `mycloneosengine-windows-local` | local Windows | Manual `run.cmd` runner is running from `C:\Runners\SGribanov-MyCloneOsEngine\mycloneosengine-windows-local`, GitHub online, and controllable by RunnerMonitor. |
-| `SGribanov/MyCloneOsEngine` | `mycloneosengine-linux` | WSL Ubuntu | Service-managed, systemd active, GitHub online. |
+| `SGribanov/MyCloneOsEngine` | `mycloneosengine-linux` | WSL Ubuntu | Service-managed from `/home/gsv777/Runners/SGribanov-MyCloneOsEngine/mycloneosengine-linux`, systemd active, GitHub online. |
 
 ## Investigate Before Any Cleanup
 

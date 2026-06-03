@@ -37,7 +37,7 @@ Future dedicated Linux host:
 | `SGribanov/IdeaBox` | `ideabox-runner` | `C:\actions-runner-ideabox` | `C:\Runners\SGribanov-IdeaBox\ideabox-runner` | Windows service | yes, if idle/admin available |
 | `SGribanov/MyCloneOsEngine` | `mycloneosengine-windows-local` | `C:\actions-runner-mycloneosengine` | `C:\Runners\SGribanov-MyCloneOsEngine\mycloneosengine-windows-local` | manual Windows | done |
 | `SGribanov/DeltaG` | `deltag-linux-wsl` | `/home/gsv777/actions-runner-deltag` | `/home/gsv777/Runners/SGribanov-DeltaG/deltag-linux-wsl` | WSL systemd | no, currently busy |
-| `SGribanov/MyCloneOsEngine` | `mycloneosengine-linux` | `/home/gsv777/myclone-runner-linux` | `/home/gsv777/Runners/SGribanov-MyCloneOsEngine/mycloneosengine-linux` | WSL systemd | yes, if idle/sudo available |
+| `SGribanov/MyCloneOsEngine` | `mycloneosengine-linux` | `/home/gsv777/myclone-runner-linux` | `/home/gsv777/Runners/SGribanov-MyCloneOsEngine/mycloneosengine-linux` | WSL systemd | done |
 
 ## Per-runner migration sequence
 
@@ -53,8 +53,9 @@ Future dedicated Linux host:
      they still target the old path, then update RunnerMonitor audit docs.
    - Windows service: uninstall/reinstall service or re-register with
      `config.cmd --replace` if needed.
-   - WSL systemd: uninstall/reinstall `svc.sh` from the new path or re-register
-     with `config.sh --replace` if needed.
+   - WSL systemd: retarget symlinks such as `bin` and `externals`, then
+     uninstall/reinstall `svc.sh` from the new path or re-register with
+     `config.sh --replace` if needed.
 7. Start the runner from the new path.
 8. Validate:
    - `runner-monitor --audit`
@@ -83,3 +84,18 @@ Get-Item -LiteralPath '<new-runner-path>\bin','<new-runner-path>\externals' | Fo
 
 If the targets still point to the old folder, remove and recreate only those
 junctions so they point to the versioned folders under the new root.
+
+## WSL symlink note
+
+GitHub Actions runner auto-update can leave `bin` and `externals` as symlinks
+to versioned folders under the original runner root. After moving a WSL/Linux
+runner folder, verify with:
+
+```powershell
+wsl.exe sh -lc "cd '<new-runner-path>' && stat -c '%N %F' bin externals"
+```
+
+If the links still point to the old folder, remove only the symlinks and
+recreate them to the versioned folders under the new root. Use `python3
+Path.unlink()` when a dangling symlink is awkward to remove through nested
+PowerShell/WSL shell quoting.
