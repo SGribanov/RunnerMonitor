@@ -107,3 +107,12 @@ The preferred Codex workflow is even simpler than passing an explicit repo:
 from any project root, run `runner-monitor --start-current`. The command
 derives `owner/repo` from `git remote get-url origin`, which avoids hard-coding
 repo names in per-project instructions.
+
+## 2026-06-03 -- Runner folder migration timing
+
+It is time to prepare migration into common `Runners` directories, but not to
+move everything in one batch. The safe product decision is a separate migration
+phase with one explicit approval per runner. Target layouts are
+`C:\Runners\<owner>-<repo>\<runner-name>` on Windows and
+`/home/gsv777/Runners/<owner>-<repo>/<runner-name>` on current WSL. Busy runners
+such as current DeltaG Windows/WSL are deferred until idle.

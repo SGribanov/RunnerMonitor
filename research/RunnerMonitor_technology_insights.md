@@ -144,3 +144,13 @@ config directory. `--connect-remote NAME` reuses that config and opens the
 remote TUI over `ssh -t`. Inside the local TUI, `connect remote NAME` uses the
 same saved config through Bubble Tea `ExecProcess`, temporarily handing the
 terminal to SSH and returning to RunnerMonitor after the remote session closes.
+
+## 2026-06-03 -- Runner folder migration constraints
+
+Moving GitHub Actions runner folders is path-sensitive. Manual Windows runners
+can be moved with backup, stop, move, and restart if idle. Windows service and
+WSL systemd runners require service/unit reinstallation or re-registration from
+the new path, often with elevated PowerShell or sudo. RunnerMonitor issue #5
+tracks the migration into `C:\Runners` and `/home/gsv777/Runners`; each runner
+move needs a runner-specific rollback plan and validation with `--audit` plus
+GitHub online status.

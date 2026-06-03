@@ -15,7 +15,9 @@ standard service mechanisms such as Windows Services, Linux systemd, and SSH.
 - Control service-managed runners with short commands such as `start 1`,
   `stop 1`, and `restart 1`.
 - Control manual Windows `run.cmd` runners in a hidden background process.
-- Keep runner folder migration and OneDev support as follow-up phases.
+- Track runner folder migration into common `Runners` directories as a separate
+  safety-gated phase.
+- Keep OneDev support as a follow-up phase.
 
 ## Requirements
 
@@ -145,6 +147,20 @@ without explicit runner-by-runner approval.
 
 Manual audit decisions such as known keep runners live in
 `runner-policy.json`.
+
+## Runner Folder Migration
+
+Runner folders should move into common `Runners` directories, but only
+runner-by-runner after explicit approval. The target layout is:
+
+```text
+C:\Runners\<owner>-<repo>\<runner-name>
+/home/gsv777/Runners/<owner>-<repo>/<runner-name>
+```
+
+The migration plan lives in `tasks/issue-5-runners-directory-migration/`.
+Do not move busy runners; DeltaG Windows and WSL runners are currently deferred
+while busy.
 
 ## Icon Assets
 
