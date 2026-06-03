@@ -31,7 +31,7 @@ Future dedicated Linux host:
 
 | Repo | Runner | Current path | Target path | Control mode | Move now? |
 |---|---|---|---|---|---|
-| `SGribanov/AU` | `windows-local` | `C:\actions-runner` | `C:\Runners\SGribanov-AU\windows-local` | manual Windows | later, when AU work resumes |
+| `SGribanov/AU` | `windows-local` | `C:\actions-runner` | `C:\Runners\SGribanov-AU\windows-local` | manual Windows | done |
 | `SGribanov/BackTester` | `backtester-runner` | `C:\actions-runner-backtester` | `C:\Runners\SGribanov-BackTester\backtester-runner` | manual Windows | done |
 | `SGribanov/DeltaG` | `deltag-win` | `C:\github-runners\deltag` | `C:\Runners\SGribanov-DeltaG\deltag-win` | Windows service | pending elevated PowerShell |
 | `SGribanov/IdeaBox` | `ideabox-runner` | `C:\actions-runner-ideabox` | `C:\Runners\SGribanov-IdeaBox\ideabox-runner` | Windows service | yes, if idle/admin available |

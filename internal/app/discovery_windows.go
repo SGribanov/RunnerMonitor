@@ -178,14 +178,15 @@ func runWindowsManualRunner(action string, runnerPath string) error {
 
 func startWindowsManualRunner(runnerPath string) error {
 	script := `
-param([string]$RunnerPath)
+$RunnerPath = $env:RUNNER_MONITOR_RUNNER_PATH
 $run = Join-Path $RunnerPath 'run.cmd'
 if (!(Test-Path -LiteralPath $run)) {
     throw "run.cmd not found at $run"
 }
 Start-Process -FilePath $run -WorkingDirectory $RunnerPath -WindowStyle Hidden
 `
-	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script, runnerPath)
+	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script)
+	cmd.Env = append(os.Environ(), "RUNNER_MONITOR_RUNNER_PATH="+runnerPath)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out)))
 	}
@@ -194,7 +195,7 @@ Start-Process -FilePath $run -WorkingDirectory $RunnerPath -WindowStyle Hidden
 
 func stopWindowsManualRunner(runnerPath string) error {
 	script := `
-param([string]$RunnerPath)
+$RunnerPath = $env:RUNNER_MONITOR_RUNNER_PATH
 $resolved = (Resolve-Path -LiteralPath $RunnerPath).Path.TrimEnd('\')
 $prefix = $resolved + '\'
 $names = @('Runner.Listener.exe', 'Runner.Worker.exe', 'Runner.PluginHost.exe')
@@ -207,7 +208,8 @@ foreach ($proc in $procs) {
     Stop-Process -Id $proc.ProcessId -Force
 }
 `
-	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script, runnerPath)
+	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script)
+	cmd.Env = append(os.Environ(), "RUNNER_MONITOR_RUNNER_PATH="+runnerPath)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out)))
 	}

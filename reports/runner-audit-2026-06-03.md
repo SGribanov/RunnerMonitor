@@ -29,6 +29,7 @@ new explicit approval naming repo, runner, host, and path.
 | `SGribanov/BackTester` | `backtester-runner` | `C:\Runners\SGribanov-BackTester\backtester-runner` | Moved from `C:\actions-runner-backtester`; backup `C:\Runners-backup\actions-runner-backtester-backtester-runner-2026-06-03.zip`; fixed `bin`/`externals` junctions; GitHub online. |
 | `SGribanov/MyCloneOsEngine` | `mycloneosengine-windows-local` | `C:\Runners\SGribanov-MyCloneOsEngine\mycloneosengine-windows-local` | Moved from `C:\actions-runner-mycloneosengine`; backup `C:\Runners-backup\actions-runner-mycloneosengine-mycloneosengine-windows-local-2026-06-03.zip`; fixed `bin`/`externals` junctions; GitHub online. |
 | `SGribanov/DeltaG` | `deltag-linux-wsl` | `/home/gsv777/Runners/SGribanov-DeltaG/deltag-linux-wsl` | Moved from `/home/gsv777/actions-runner-deltag`; backup `/home/gsv777/runner-backups/actions-runner-deltag-deltag-linux-wsl-move-2026-06-03.tar.gz`; fixed `bin`/`externals` symlinks; systemd unit active/enabled from new path; GitHub online. |
+| `SGribanov/AU` | `windows-local` | `C:\Runners\SGribanov-AU\windows-local` | Moved from `C:\actions-runner`; backup `C:\Runners-backup\actions-runner-windows-local-move-2026-06-03.zip`; fixed `bin`/`externals` junctions; reattached GitHub runner binding; GitHub online. |
 
 ## Resolved Elevated Cleanup
 
@@ -40,7 +41,7 @@ then removed manually from WSL with sudo. Current WSL unit list no longer shows
 
 | Repo | Runner | Host | Evidence |
 |---|---|---|---|
-| `SGribanov/AU` | `windows-local` | local Windows | Policy keep: AU project will continue. |
+| `SGribanov/AU` | `windows-local` | local Windows | Manual `run.cmd` runner is running from `C:\Runners\SGribanov-AU\windows-local`, GitHub online, and controllable by RunnerMonitor. |
 | `SGribanov/BackTester` | `backtester-runner` | local Windows | Manual `run.cmd` runner is running from `C:\Runners\SGribanov-BackTester\backtester-runner`, GitHub online, and controllable by RunnerMonitor. |
 | `SGribanov/IdeaBox` | `ideabox-runner` | local Windows | Service-managed and GitHub online. |
 | `SGribanov/MyCloneOsEngine` | `mycloneosengine-windows-local` | local Windows | Manual `run.cmd` runner is running from `C:\Runners\SGribanov-MyCloneOsEngine\mycloneosengine-windows-local`, GitHub online, and controllable by RunnerMonitor. |

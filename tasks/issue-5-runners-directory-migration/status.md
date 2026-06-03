@@ -70,15 +70,29 @@
   - `runner-monitor --audit` still shows DeltaG stale queue investigation;
   - from `C:\Repos\DeltaG`, `--start-current` returns both DeltaG runners
     already running.
+- Migrated `SGribanov/AU windows-local` from `C:\actions-runner` to
+  `C:\Runners\SGribanov-AU\windows-local`.
+- Created backup:
+  `C:\Runners-backup\actions-runner-windows-local-move-2026-06-03.zip`.
+- Fixed post-move runner junctions:
+  - `bin` -> `C:\Runners\SGribanov-AU\windows-local\bin.2.333.0`
+  - `externals` -> `C:\Runners\SGribanov-AU\windows-local\externals.2.333.0`
+- Reattached GitHub runner binding because GitHub had zero registered AU
+  runners while the local folder still had stale registration files.
+- Fixed RunnerMonitor manual Windows start path passing so `--start-current`
+  can launch paths under `C:\Runners`.
+- Validation passed:
+  - one `Runner.Listener.exe` process is running from
+    `C:\Runners\SGribanov-AU\windows-local`;
+  - GitHub reports `windows-local` online and `busy=false`;
+  - `runner-monitor --audit` shows AU as `keep`, `running`, and `online`;
+  - from `C:\Repos\AU`, `--start-current` returns `start windows-local requested`.
 
 ## Next
 
 - Continue with the next non-busy runner.
 - Windows service moves (`IdeaBox`, `DeltaG Windows`) require elevated
   PowerShell; current shell is not elevated.
-- `SGribanov/AU windows-local` has no GitHub runner binding at the moment, so
-  it needs re-registration or a fresh GitHub runner attach before normal move
-  validation can pass.
 - Include junction/symlink retargeting after every moved runner folder.
 
 ## Blockers

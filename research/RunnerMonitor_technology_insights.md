@@ -213,3 +213,27 @@ systemd unit started with `ExecStart` under the new path. GitHub reported both
 DeltaG runners online/busy=false, and `--start-current` from `C:\Repos\DeltaG`
 returned both DeltaG runners already running. The repo still reports a stale
 queued run, but this is now decoupled from local runner folder placement.
+
+## 2026-06-03 -- AU runner move and reattach
+
+`SGribanov/AU windows-local` was moved from `C:\actions-runner` to
+`C:\Runners\SGribanov-AU\windows-local` after backup
+`C:\Runners-backup\actions-runner-windows-local-move-2026-06-03.zip`. The local
+folder still contained `.runner` credentials for `SGribanov/AU`, but GitHub
+reported zero registered runners for the repo, so the migration needed a
+GitHub reattach rather than only a path move. Running `config.cmd remove` with a
+fresh remove token cleaned the stale local registration, and `config.cmd
+--replace` with a fresh registration token recreated `windows-local`. The
+post-move `bin` and `externals` junctions again needed retargeting to the
+versioned folders under the new root. After fixing RunnerMonitor's manual
+Windows launch path handling, `--start-current` from `C:\Repos\AU` started the
+runner; GitHub reported `windows-local` online/busy=false.
+
+## 2026-06-03 -- Manual Windows PowerShell path passing
+
+Passing the runner path as a positional argument to `powershell -Command` was
+fragile: PowerShell executed the path as a follow-up command and left
+`$RunnerPath` empty inside the script, breaking `Join-Path`. Manual Windows
+runner start/stop now pass the runner path through a process environment
+variable, which avoids quoting edge cases for paths such as
+`C:\Runners\SGribanov-AU\windows-local`.
