@@ -38,6 +38,13 @@ and NewGen WSL `newgen-wsl-linux`. DeltaG runners stay under `investigate`
 because the repository currently has a stale queued workflow, so label/routing
 must be checked before removing anything.
 
+## 2026-06-03 -- First approved removal
+
+`legion-ubuntu-wsl-x64` was explicitly approved for deletion and removed from
+`/home/gsv777/actions-runner-linux-x64` after creating backup
+`/home/gsv777/runner-backups/actions-runner-linux-x64-legion-ubuntu-wsl-x64-2026-06-03.tar.gz`.
+Post-removal audit no longer lists that runner.
+
 ## 2026-06-03 -- Manual startup policy
 
 Runners should not auto-start at boot. The desired workflow is for Codex or the

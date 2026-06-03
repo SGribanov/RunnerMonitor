@@ -7,16 +7,18 @@
 - Added read-only `--audit` command.
 - Current audit reports candidate removals for local-only or GitHub-unknown manual/inactive runners.
 - Added `reports/runner-audit-2026-06-03.md` with read-only cleanup proposal and exact commands.
+- Removed approved runner `legion-ubuntu-wsl-x64` at `/home/gsv777/actions-runner-linux-x64`.
+- Created backup `/home/gsv777/runner-backups/actions-runner-linux-x64-legion-ubuntu-wsl-x64-2026-06-03.tar.gz`.
 
 ## Current audit snapshot
 
 - Candidate remove: `windows-local`, `newgenosengine-windows-local`, `mycloneosengine-linux`, `newgen-wsl-linux`.
-- Investigate: `backtester-runner`, DeltaG runners with queued jobs, `mycloneosengine-windows-local`, `legion-ubuntu-wsl-x64`.
+- Investigate: `backtester-runner`, DeltaG runners with queued jobs, `mycloneosengine-windows-local`.
 - Keep: `ideabox-runner`.
 
 ## Next
 
-- Operator decides which `candidate-remove` runners are actually safe to remove.
+- Operator decides which remaining `candidate-remove` runners are actually safe to remove.
 
 ## Blockers
 

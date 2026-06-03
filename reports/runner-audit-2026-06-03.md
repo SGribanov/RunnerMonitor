@@ -4,13 +4,20 @@
 |---|---|
 | Project | RunnerMonitor |
 | Source | `runner-monitor --audit` |
-| Status | read-only proposal |
+| Status | partially executed |
 
 ## Summary
 
-No runner was removed during this audit. The table below separates runners into
-`keep`, `investigate`, and `candidate-remove`. Removal commands are provided
-only for candidate runners and must not be executed without explicit approval.
+One runner was removed after explicit approval: `legion-ubuntu-wsl-x64`.
+Remaining runners are separated into `keep`, `investigate`, and
+`candidate-remove`. Removal commands are provided only for candidate runners and
+must not be executed without explicit approval.
+
+## Completed Removals
+
+| Repo | Runner | Path | Backup |
+|---|---|---|---|
+| `SGribanov/DeltaG` | `legion-ubuntu-wsl-x64` | `/home/gsv777/actions-runner-linux-x64` | `/home/gsv777/runner-backups/actions-runner-linux-x64-legion-ubuntu-wsl-x64-2026-06-03.tar.gz` |
 
 ## Keep
 
@@ -23,11 +30,10 @@ only for candidate runners and must not be executed without explicit approval.
 | Repo | Runner | Host | Evidence | Suggested action |
 |---|---|---|---|---|
 | `SGribanov/BackTester` | `backtester-runner` | local Windows | GitHub online, but not service-managed locally. | Decide whether to install as service or remove/recreate later. |
-| `SGribanov/DeltaG` | `deltag-win` | local Windows | Running, GitHub online, repo has `1/1 stale` queued jobs. | Keep for now; investigate queued job label/routing first. |
-| `SGribanov/DeltaG` | `legion-windows-x64` | local Windows | GitHub online, manual local directory, repo has `1/1 stale` queued jobs. | Decide whether this is the desired Windows DeltaG runner or legacy. |
+| `SGribanov/DeltaG` | `deltag-win` | local Windows | Running, GitHub online, currently busy, repo has `2/1 stale` queued jobs. | Keep for now; investigate queued job label/routing first. |
+| `SGribanov/DeltaG` | `legion-windows-x64` | local Windows | GitHub online, manual local directory, repo has `2/1 stale` queued jobs. | Decide whether this is the desired Windows DeltaG runner or legacy. |
 | `SGribanov/MyCloneOsEngine` | `mycloneosengine-windows-local` | local Windows | GitHub online, but not service-managed locally. | Decide whether it should become service-managed. |
-| `SGribanov/DeltaG` | `deltag-linux-wsl` | WSL Ubuntu | Active, GitHub online, repo has `1/1 stale` queued jobs. | Keep for now; investigate queued job label/routing first. |
-| `SGribanov/DeltaG` | `legion-ubuntu-wsl-x64` | WSL Ubuntu | Local configured runner not visible in GitHub API, but DeltaG has queued jobs. | Investigate labels before removal. |
+| `SGribanov/DeltaG` | `deltag-linux-wsl` | WSL Ubuntu | Active, GitHub online, currently busy, repo has `2/1 stale` queued jobs. | Keep for now; investigate queued job label/routing first. |
 
 ## Candidate Remove
 
