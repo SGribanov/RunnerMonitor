@@ -6,6 +6,7 @@
 - Created issue #2.
 - Added read-only `--audit` command.
 - Current audit reports candidate removals for local-only or GitHub-unknown manual/inactive runners.
+- Added `reports/runner-audit-2026-06-03.md` with read-only cleanup proposal and exact commands.
 
 ## Current audit snapshot
 
@@ -20,4 +21,3 @@
 ## Blockers
 
 - Destructive cleanup requires explicit approval.
-

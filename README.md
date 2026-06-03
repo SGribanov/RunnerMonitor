@@ -71,3 +71,6 @@ Disable runner autostart from an elevated PowerShell session:
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File C:\Repos\RunnerMonitor\scripts\disable-autostart-elevated.ps1
 ```
+
+Runner cleanup proposals live in `reports/`; do not execute removal commands
+without explicit runner-by-runner approval.

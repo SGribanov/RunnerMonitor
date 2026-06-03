@@ -30,6 +30,14 @@ runners as `keep`, `investigate`, or `candidate-remove`, but actual deletion of
 services, GitHub registrations, or folders requires separate approval for each
 runner.
 
+## 2026-06-03 -- First cleanup candidates
+
+The first audit identifies four candidate removals: AU `windows-local`, NewGen
+Windows `newgenosengine-windows-local`, MyClone Linux `mycloneosengine-linux`,
+and NewGen WSL `newgen-wsl-linux`. DeltaG runners stay under `investigate`
+because the repository currently has a stale queued workflow, so label/routing
+must be checked before removing anything.
+
 ## 2026-06-03 -- Manual startup policy
 
 Runners should not auto-start at boot. The desired workflow is for Codex or the
