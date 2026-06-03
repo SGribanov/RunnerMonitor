@@ -45,6 +45,14 @@ must be checked before removing anything.
 `/home/gsv777/runner-backups/actions-runner-linux-x64-legion-ubuntu-wsl-x64-2026-06-03.tar.gz`.
 Post-removal audit no longer lists that runner.
 
+## 2026-06-03 -- Second approved removal
+
+`legion-windows-x64` was explicitly approved for deletion. The GitHub runner
+registration id `21` was deleted from `SGribanov/DeltaG`; local folder
+`C:\actions-runner-win-x64` was backed up to
+`C:\Runners-backup\actions-runner-win-x64-legion-windows-x64-2026-06-03.zip`
+and removed. Post-removal audit no longer lists that runner.
+
 ## 2026-06-03 -- Manual startup policy
 
 Runners should not auto-start at boot. The desired workflow is for Codex or the

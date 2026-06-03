@@ -9,6 +9,9 @@
 - Added `reports/runner-audit-2026-06-03.md` with read-only cleanup proposal and exact commands.
 - Removed approved runner `legion-ubuntu-wsl-x64` at `/home/gsv777/actions-runner-linux-x64`.
 - Created backup `/home/gsv777/runner-backups/actions-runner-linux-x64-legion-ubuntu-wsl-x64-2026-06-03.tar.gz`.
+- Removed approved runner `legion-windows-x64` at `C:\actions-runner-win-x64`.
+- Deleted GitHub runner registration id `21` from `SGribanov/DeltaG`.
+- Created backup `C:\Runners-backup\actions-runner-win-x64-legion-windows-x64-2026-06-03.zip`.
 
 ## Current audit snapshot
 
