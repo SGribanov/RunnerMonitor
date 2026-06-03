@@ -134,3 +134,13 @@ ssh runnerbox "cd C:/Repos/DeltaG; powershell -NoProfile -ExecutionPolicy Bypass
 
 Future `--host` support can wrap this command shape rather than changing the TUI
 command model.
+
+## 2026-06-03 -- Saved remote host configuration
+
+RunnerMonitor now has a minimal saved SSH host workflow. `--configure-remote
+NAME` prompts for remote name, SSH host/alias, host OS, remote RunnerMonitor
+path, and default project path, then writes `remote-hosts.json` under the user's
+config directory. `--connect-remote NAME` reuses that config and opens the
+remote TUI over `ssh -t`. Inside the local TUI, `connect remote NAME` uses the
+same saved config through Bubble Tea `ExecProcess`, temporarily handing the
+terminal to SSH and returning to RunnerMonitor after the remote session closes.

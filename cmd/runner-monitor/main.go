@@ -20,6 +20,8 @@ func main() {
 	stopCurrent := flag.Bool("stop-current", false, "stop service-managed runners for the current git origin repository")
 	restartCurrent := flag.Bool("restart-current", false, "restart service-managed runners for the current git origin repository")
 	disableAutostart := flag.Bool("disable-autostart", false, "disable boot autostart for service-managed runners without stopping them")
+	configureRemote := flag.String("configure-remote", "", "prompt for SSH remote runner host settings and save them")
+	connectRemote := flag.String("connect-remote", "", "open the saved SSH remote runner host TUI")
 	flag.Parse()
 
 	needsInventory := *once || *audit || *disableAutostart || *startCurrent || *stopCurrent || *restartCurrent ||
@@ -70,6 +72,20 @@ func main() {
 	}
 	if *restartRepo != "" {
 		fmt.Print(app.RunRepoLifecycle("restart", *restartRepo, inventory))
+		return
+	}
+	if *configureRemote != "" {
+		if err := app.ConfigureRemoteHost(*configureRemote, os.Stdin, os.Stdout); err != nil {
+			fmt.Fprintf(os.Stderr, "configure remote failed: %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+	if *connectRemote != "" {
+		if err := app.ConnectRemoteHost(*connectRemote, os.Stdin, os.Stdout, os.Stderr); err != nil {
+			fmt.Fprintf(os.Stderr, "connect remote failed: %v\n", err)
+			os.Exit(1)
+		}
 		return
 	}
 

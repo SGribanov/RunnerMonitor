@@ -26,11 +26,16 @@ type refreshResultMsg struct {
 
 type spinnerTickMsg time.Time
 
+type remoteConnectDoneMsg struct {
+	name string
+	err  error
+}
+
 var hourglassFrames = []string{"⌛", "⏳"}
 
 func NewModel(inventory Inventory) Model {
 	input := textinput.New()
-	input.Placeholder = "refresh | start 1 | stop 1 | restart 1 | logs 1 | q"
+	input.Placeholder = "refresh | start 1 | connect remote runnerbox | q"
 	input.Focus()
 	input.CharLimit = 120
 	input.Width = 80
@@ -73,6 +78,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.spinnerFrame = (m.spinnerFrame + 1) % len(hourglassFrames)
 		return m, spinnerTickCmd()
+	case remoteConnectDoneMsg:
+		if msg.err != nil {
+			m.message = fmt.Sprintf("remote %s connection failed: %v", msg.name, msg.err)
+		} else {
+			m.message = fmt.Sprintf("remote %s connection closed", msg.name)
+		}
+		return m, nil
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc:
@@ -103,7 +115,7 @@ func (m Model) View() string {
 		b.WriteString("\n")
 		return b.String()
 	}
-	b.WriteString("Commands: refresh | start N | stop N | restart N | force-stop N | logs N | q\n\n")
+	b.WriteString("Commands: refresh | start N | stop N | restart N | force-stop N | logs N | connect remote NAME | q\n\n")
 	b.WriteString(renderTable(m.inventory.Runners))
 	b.WriteString("\n")
 	if m.message != "" {
@@ -127,6 +139,21 @@ func (m Model) runCommand(command string) (tea.Model, tea.Cmd) {
 		m.loading = true
 		m.message = "Ожидайте, идет опрос раннеров..."
 		return m, tea.Batch(refreshInventoryCmd(), spinnerTickCmd())
+	}
+	if command == "connect remote" || strings.HasPrefix(command, "connect remote ") {
+		name := strings.TrimSpace(strings.TrimPrefix(command, "connect remote"))
+		if name == "" {
+			name = "runnerbox"
+		}
+		cmd, err := RemoteTUIProcess(name)
+		if err != nil {
+			m.message = err.Error()
+			return m, nil
+		}
+		m.message = fmt.Sprintf("connecting remote %s", name)
+		return m, tea.ExecProcess(cmd, func(err error) tea.Msg {
+			return remoteConnectDoneMsg{name: name, err: err}
+		})
 	}
 
 	parts := strings.Fields(command)

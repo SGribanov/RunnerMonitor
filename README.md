@@ -33,6 +33,8 @@ go run ./cmd/runner-monitor --audit
 go run ./cmd/runner-monitor --start-repo SGribanov/DeltaG
 go run ./cmd/runner-monitor --start-current
 go run ./cmd/runner-monitor --disable-autostart
+go run ./cmd/runner-monitor --configure-remote runnerbox
+go run ./cmd/runner-monitor --connect-remote runnerbox
 ```
 
 Inside the TUI:
@@ -44,6 +46,7 @@ Inside the TUI:
 - `force-stop 1`
 - `force-restart 1`
 - `logs 1`
+- `connect remote runnerbox`
 - `q`
 
 Codex/operator automation can start runners for a project without opening the
@@ -65,11 +68,40 @@ powershell -NoProfile -ExecutionPolicy Bypass -File C:\Repos\RunnerMonitor\runne
 ## Remote Runner Host
 
 When runners move to a dedicated machine on the network, connect to that machine
-over SSH and run RunnerMonitor there. Configure an SSH alias such as `runnerbox`
-in `%USERPROFILE%\.ssh\config`, then use these commands from the operator
-machine.
+over SSH and run RunnerMonitor there. RunnerMonitor can prompt for host settings
+and save them in the user config file, so the SSH command does not need to be
+remembered every time.
 
-Open the remote TUI on a Windows runner host:
+Configure or update a remote host:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\Repos\RunnerMonitor\runner-monitor.ps1 --configure-remote runnerbox
+```
+
+The prompt asks for:
+
+- remote name
+- SSH host or alias
+- host OS: `windows` or `linux`
+- remote RunnerMonitor path
+- default remote project path
+
+Open the saved remote TUI:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\Repos\RunnerMonitor\runner-monitor.ps1 --connect-remote runnerbox
+```
+
+Inside the local TUI, use:
+
+```text
+connect remote runnerbox
+```
+
+The saved config lives under the current user's config directory as
+`RunnerMonitor\remote-hosts.json`.
+
+Under the hood, the saved Windows host command is equivalent to:
 
 ```powershell
 ssh -t runnerbox "powershell -NoProfile -ExecutionPolicy Bypass -File C:/Repos/RunnerMonitor/runner-monitor.ps1"

@@ -155,3 +155,27 @@ func TestRunnerDirFromProcessPath(t *testing.T) {
 		t.Fatalf("runnerDirFromProcessPath = %q", got)
 	}
 }
+
+func TestRemoteWindowsTUICommand(t *testing.T) {
+	host := RemoteHost{SSHHost: "runnerbox", OS: "windows", RunnerMonitorPath: "C:/Repos/RunnerMonitor/runner-monitor.ps1"}
+	args := remoteTUISSHArgs(host)
+	wantCommand := "powershell -NoProfile -ExecutionPolicy Bypass -File C:/Repos/RunnerMonitor/runner-monitor.ps1"
+	if len(args) != 3 || args[0] != "-t" || args[1] != "runnerbox" || args[2] != wantCommand {
+		t.Fatalf("remoteTUISSHArgs = %#v", args)
+	}
+}
+
+func TestPromptRemoteHostUsesLinuxDefaultsAfterOSSelection(t *testing.T) {
+	input := strings.NewReader("runnerlinux\nrunnerlinux\nlinux\n\n\n")
+	var output strings.Builder
+	host, err := promptRemoteHost("", RemoteHost{}, input, &output)
+	if err != nil {
+		t.Fatalf("promptRemoteHost returned error: %v", err)
+	}
+	if host.RunnerMonitorPath != "/opt/RunnerMonitor/runner-monitor" {
+		t.Fatalf("RunnerMonitorPath = %q", host.RunnerMonitorPath)
+	}
+	if host.DefaultProjectPath != "/srv/DeltaG" {
+		t.Fatalf("DefaultProjectPath = %q", host.DefaultProjectPath)
+	}
+}
