@@ -45,9 +45,9 @@ then removed manually from WSL with sudo. Current WSL unit list no longer shows
 
 | Repo | Runner | Host | Evidence | Suggested action |
 |---|---|---|---|---|
-| `SGribanov/BackTester` | `backtester-runner` | local Windows | GitHub online, but not service-managed locally. | Decide whether to install as service or remove/recreate later. |
+| `SGribanov/BackTester` | `backtester-runner` | local Windows | Process running and GitHub online, but not service-managed locally. | Decide whether to install as service or keep manual/background. |
 | `SGribanov/DeltaG` | `deltag-win` | local Windows | Running, GitHub online, repo has `1/1 stale` queued jobs. | Keep for now; investigate queued job label/routing first. |
-| `SGribanov/MyCloneOsEngine` | `mycloneosengine-windows-local` | local Windows | GitHub online, but not service-managed locally. | Decide whether it should become service-managed. |
+| `SGribanov/MyCloneOsEngine` | `mycloneosengine-windows-local` | local Windows | Process running and GitHub online, but not service-managed locally. | Decide whether it should become service-managed. |
 | `SGribanov/DeltaG` | `deltag-linux-wsl` | WSL Ubuntu | Active, GitHub online, repo has `1/1 stale` queued jobs. | Keep for now; investigate queued job label/routing first. |
 
 ## Candidate Remove
@@ -57,4 +57,3 @@ None in the latest audit.
 ## Approval Needed
 
 No deletion approval is pending.
-

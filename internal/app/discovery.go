@@ -19,7 +19,11 @@ func DiscoverLocal() ([]Runner, error) {
 		if err != nil {
 			warnings = append(warnings, err)
 		}
-		windows, err := discoverWindowsRunnerDirs(services)
+		processes, err := discoverWindowsRunnerProcesses()
+		if err != nil {
+			warnings = append(warnings, err)
+		}
+		windows, err := discoverWindowsRunnerDirs(services, processes)
 		if err != nil {
 			warnings = append(warnings, err)
 		}

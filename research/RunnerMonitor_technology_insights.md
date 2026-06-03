@@ -64,3 +64,10 @@ The existing `/home/gsv777/myclone-runner-linux` folder could be safely reused:
 back up local runner config, re-register with a GitHub registration token using
 `config.sh --replace`, then install/start the official WSL systemd service with
 `svc.sh`. GitHub reported `mycloneosengine-linux` online as runner id `24`.
+
+## 2026-06-03 -- Manual Windows process state
+
+Manual Windows runners can be online because `Runner.Listener.exe` is running
+from the runner folder even when no Windows service exists. Discovery should
+map `Runner.Listener.exe` executable paths back to runner roots so the TUI shows
+`Local=running` instead of only `manual`.

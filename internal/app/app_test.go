@@ -71,6 +71,13 @@ func TestAuditRunnerInvestigatesQueuedRepo(t *testing.T) {
 	}
 }
 
+func TestAuditRunnerInvestigatesManualRunningRunner(t *testing.T) {
+	decision, evidence := AuditRunner(Runner{Name: "manual-running", LocalState: "running", GitHubStatus: "online", ControlMode: "manual"})
+	if decision != "investigate" || evidence != "online in GitHub but not service-managed locally" {
+		t.Fatalf("decision/evidence = %q/%q", decision, evidence)
+	}
+}
+
 func TestAuditRunnerFlagsUnitOnlyRunner(t *testing.T) {
 	decision, evidence := AuditRunner(Runner{Name: "unit-only", Path: "(unit only)", LocalState: "inactive"})
 	if decision != "candidate-remove" || evidence != "orphan service unit without runner directory" {
@@ -99,5 +106,12 @@ func TestRunRepoLifecycleSkipsManualRunner(t *testing.T) {
 	}}})
 	if got != "skip manual: not service-managed\nno service-managed runners found for SGribanov/RunnerMonitor\n" {
 		t.Fatalf("RunRepoLifecycle = %q", got)
+	}
+}
+
+func TestRunnerDirFromProcessPath(t *testing.T) {
+	got := runnerDirFromProcessPath(`C:\actions-runner-backtester\bin\Runner.Listener.exe`)
+	if got != `C:\actions-runner-backtester` {
+		t.Fatalf("runnerDirFromProcessPath = %q", got)
 	}
 }

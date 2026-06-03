@@ -15,7 +15,14 @@ type windowsService struct {
 	PathName string `json:"PathName"`
 }
 
-func discoverWindowsRunnerDirs(services map[string]windowsService) ([]Runner, error) {
+type windowsRunnerProcess struct {
+	ProcessID      int    `json:"ProcessId"`
+	Name           string `json:"Name"`
+	ExecutablePath string `json:"ExecutablePath"`
+	CommandLine    string `json:"CommandLine"`
+}
+
+func discoverWindowsRunnerDirs(services map[string]windowsService, processes map[string]windowsRunnerProcess) ([]Runner, error) {
 	roots := []string{
 		`C:\Runners`,
 		`C:\actions-runner*`,
@@ -42,6 +49,9 @@ func discoverWindowsRunnerDirs(services map[string]windowsService) ([]Runner, er
 			runner.ServiceName = service.Name
 			runner.LocalState = strings.ToLower(service.State)
 			runner.ControlMode = "windows-service"
+		} else if _, ok := processes[strings.ToLower(dir)]; ok {
+			runner.LocalState = "running"
+			runner.ControlMode = "manual"
 		}
 		runners = append(runners, runner)
 	}
@@ -81,6 +91,39 @@ func discoverWindowsServices() (map[string]windowsService, error) {
 	return byDir, nil
 }
 
+func discoverWindowsRunnerProcesses() (map[string]windowsRunnerProcess, error) {
+	script := `Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'Runner.Listener.exe' -and $_.ExecutablePath } | Select-Object ProcessId,Name,ExecutablePath,CommandLine | ConvertTo-Json -Depth 3`
+	out, err := exec.Command("powershell", "-NoProfile", "-Command", script).Output()
+	if err != nil {
+		return map[string]windowsRunnerProcess{}, err
+	}
+	out = []byte(strings.TrimSpace(string(out)))
+	if len(out) == 0 {
+		return map[string]windowsRunnerProcess{}, nil
+	}
+
+	var processes []windowsRunnerProcess
+	if out[0] == '{' {
+		var process windowsRunnerProcess
+		if err := json.Unmarshal(out, &process); err != nil {
+			return nil, err
+		}
+		processes = []windowsRunnerProcess{process}
+	} else if err := json.Unmarshal(out, &processes); err != nil {
+		return nil, err
+	}
+
+	byDir := map[string]windowsRunnerProcess{}
+	for _, process := range processes {
+		dir := runnerDirFromProcessPath(process.ExecutablePath)
+		if dir == "" {
+			continue
+		}
+		byDir[strings.ToLower(dir)] = process
+	}
+	return byDir, nil
+}
+
 func runnerDirFromServicePath(pathName string) string {
 	pathName = strings.Trim(pathName, `"`)
 	if pathName == "" {
@@ -88,6 +131,14 @@ func runnerDirFromServicePath(pathName string) string {
 	}
 	dir := filepath.Dir(filepath.Dir(pathName))
 	return filepath.Clean(dir)
+}
+
+func runnerDirFromProcessPath(pathName string) string {
+	pathName = strings.Trim(pathName, `"`)
+	if pathName == "" {
+		return ""
+	}
+	return filepath.Clean(filepath.Dir(filepath.Dir(pathName)))
 }
 
 func runWindowsService(action string, serviceName string) error {

@@ -23,7 +23,7 @@
 ## Current audit snapshot
 
 - Candidate remove: none.
-- Investigate: `backtester-runner`, DeltaG runners with queued jobs, `mycloneosengine-windows-local`.
+- Investigate: `backtester-runner` and `mycloneosengine-windows-local` are running manual Windows processes; DeltaG still has queued jobs.
 - Keep: `windows-local`, `ideabox-runner`, `mycloneosengine-linux`.
 
 ## Next
