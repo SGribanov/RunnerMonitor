@@ -79,3 +79,20 @@ without explicit runner-by-runner approval.
 
 Manual audit decisions such as known keep runners live in
 `runner-policy.json`.
+
+## Icon Assets
+
+RunnerMonitor includes a generated hourglass icon set:
+
+- `assets/runner-monitor-hourglass.png` -- transparent 512px source.
+- `assets/runner-monitor-hourglass-spin.gif` -- animated spinning hourglass.
+- `assets/runner-monitor-hourglass.ico` -- Windows executable icon.
+- `cmd/runner-monitor/runner-monitor_windows_amd64.syso` -- Windows resource
+  linked automatically by `go build`.
+
+Regenerate the icon assets with:
+
+```powershell
+uv run --with pillow python scripts\generate-icon-assets.py
+go run github.com/akavel/rsrc@v0.10.2 -arch amd64 -ico assets\runner-monitor-hourglass.ico -o cmd\runner-monitor\runner-monitor_windows_amd64.syso
+```

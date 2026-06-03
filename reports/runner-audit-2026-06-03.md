@@ -57,9 +57,14 @@ The remaining queued DeltaG run is `26447257991`, workflow `ci`, display title
 branch `codex/604-vertical-freshness-diagnostic`, created
 `2026-05-26T10:36:43Z`, updated `2026-05-26T10:52:39Z`.
 GitHub reports zero jobs for the run. Related PRs `#709` and `#710` for the same
-branch are both closed. Current DeltaG self-hosted runners `deltag-win` and
-`deltag-linux-wsl` are online and not busy, so this looks like a stale GitHub
-Actions run rather than missing local runner capacity.
+branch are both closed. At diagnosis time, DeltaG self-hosted runners
+`deltag-win` and `deltag-linux-wsl` were online and not busy, so this looks like
+a stale GitHub Actions run rather than missing local runner capacity.
+
+An explicit cancel attempt was made with
+`POST /repos/SGribanov/DeltaG/actions/runs/26447257991/cancel`. GitHub returned
+HTTP `409` with `Cannot cancel a workflow re-run that has not yet queued`; a
+follow-up `gh run view` still reports the run as `queued`.
 
 ## Candidate Remove
 

@@ -34,11 +34,12 @@
 - Created/updated: `2026-05-26T10:36:43Z` / `2026-05-26T10:52:39Z`.
 - Jobs: `0`.
 - Related PRs `#709` and `#710` are closed.
-- DeltaG runners `deltag-win` and `deltag-linux-wsl` are online and not busy.
+- At diagnosis time, DeltaG runners `deltag-win` and `deltag-linux-wsl` were online and not busy.
+- Attempted GitHub cancel API: `POST /repos/SGribanov/DeltaG/actions/runs/26447257991/cancel` returned HTTP `409` with `Cannot cancel a workflow re-run that has not yet queued`; run still reports `queued`.
 
 ## Next
 
-- Decide whether to cancel the remaining stale DeltaG workflow run or teach audit to ignore closed-PR/no-job stale runs.
+- Teach audit to ignore or separately flag closed-PR/no-job stale runs, because the GitHub cancel API cannot cancel this one.
 
 ## Blockers
 

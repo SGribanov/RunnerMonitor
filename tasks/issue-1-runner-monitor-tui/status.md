@@ -19,6 +19,7 @@ Milestone 2: TUI commands.
 - TUI/audit tables now show an explicit `Project` column.
 - Windows manual runner processes now appear as `Local=running` while remaining `ControlMode=manual`.
 - Manual Windows `run.cmd` runners can now be started/stopped/restarted by RunnerMonitor in a hidden background process.
+- Added generated hourglass icon assets and embedded the static `.ico` into the Windows exe through a `.syso` resource.
 - Added TUI commands: `refresh`, `start N`, `stop N`, `restart N`, `logs N`, `q`.
 - Added `--once` smoke mode.
 - Added `--audit`, `--start-repo`, `--stop-repo`, `--restart-repo`, and `--disable-autostart`.
@@ -34,6 +35,7 @@ Milestone 2: TUI commands.
 ## Next
 
 - Investigate the DeltaG stale queued workflow and label/routing.
+- Decide where to surface the animated GIF asset in future UI/docs, since Windows exe shell icons themselves cannot animate.
 - Run autostart disable from elevated context or document handoff commands.
 
 ## Decisions
