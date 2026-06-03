@@ -78,3 +78,18 @@ None in the latest audit.
 ## Approval Needed
 
 No deletion approval is pending.
+
+## Elevated Windows Service Blocker
+
+The remaining unmoved runner folders are Windows service-managed:
+
+- `SGribanov/IdeaBox ideabox-runner` at `C:\actions-runner-ideabox`
+- `SGribanov/DeltaG deltag-win` at `C:\github-runners\deltag`
+
+Both services are currently running with `StartMode=Auto`, and GitHub reports
+both runners online/busy=false. The current shell is not elevated
+(`Administrator=False`). Attempting to disable autostart with `sc.exe config
+... start= demand` returned `OpenService FAILED 5: Access is denied` for both
+services. Moving these folders safely requires elevated PowerShell so the
+service can be stopped, reconfigured to the new `C:\Runners` path, switched to
+manual startup, and restarted.

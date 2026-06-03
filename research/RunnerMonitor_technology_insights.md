@@ -237,3 +237,13 @@ fragile: PowerShell executed the path as a follow-up command and left
 runner start/stop now pass the runner path through a process environment
 variable, which avoids quoting edge cases for paths such as
 `C:\Runners\SGribanov-AU\windows-local`.
+
+## 2026-06-03 -- Windows service migration blocker
+
+The remaining Windows service-managed runners, `SGribanov/IdeaBox
+ideabox-runner` and `SGribanov/DeltaG deltag-win`, require elevated PowerShell
+for both autostart changes and folder migration. In a non-elevated shell
+(`Administrator=False`), `sc.exe config ... start= demand` returns
+`OpenService FAILED 5: Access is denied`. These runners should not be moved
+until an elevated session can stop the service, update or reinstall the service
+from the new `C:\Runners` path, set startup to manual, and restart it.

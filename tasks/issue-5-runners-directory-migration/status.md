@@ -93,6 +93,9 @@
 - Continue with the next non-busy runner.
 - Windows service moves (`IdeaBox`, `DeltaG Windows`) require elevated
   PowerShell; current shell is not elevated.
+- Attempted to disable Windows service autostart for `IdeaBox` and `DeltaG
+  Windows` with `sc.exe config ... start= demand`; both returned
+  `OpenService FAILED 5: Access is denied`.
 - Include junction/symlink retargeting after every moved runner folder.
 
 ## Blockers
