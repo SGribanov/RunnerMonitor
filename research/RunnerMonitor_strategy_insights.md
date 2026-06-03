@@ -35,3 +35,10 @@ runner.
 Runners should not auto-start at boot. The desired workflow is for Codex or the
 operator to start only the required project runner with a short command such as
 `runner-monitor --start-repo SGribanov/DeltaG`.
+
+## 2026-06-03 -- Current-project startup command
+
+The preferred Codex workflow is even simpler than passing an explicit repo:
+from any project root, run `runner-monitor --start-current`. The command
+derives `owner/repo` from `git remote get-url origin`, which avoids hard-coding
+repo names in per-project instructions.

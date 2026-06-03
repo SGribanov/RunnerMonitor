@@ -17,6 +17,7 @@ func TestRepoFromGitHubURL(t *testing.T) {
 		"https://github.com/SGribanov/RunnerMonitor":     "SGribanov/RunnerMonitor",
 		"git@github.com:SGribanov/RunnerMonitor.git":     "SGribanov/RunnerMonitor",
 		"https://github.com/SGribanov/RunnerMonitor.git": "SGribanov/RunnerMonitor",
+		"git@github.com:SGribanov/RunnerMonitor":         "SGribanov/RunnerMonitor",
 	}
 	for input, want := range cases {
 		if got := repoFromGitHubURL(input); got != want {

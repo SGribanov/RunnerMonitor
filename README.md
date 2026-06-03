@@ -29,6 +29,7 @@ go run ./cmd/runner-monitor
 go run ./cmd/runner-monitor --once
 go run ./cmd/runner-monitor --audit
 go run ./cmd/runner-monitor --start-repo SGribanov/DeltaG
+go run ./cmd/runner-monitor --start-current
 go run ./cmd/runner-monitor --disable-autostart
 ```
 
@@ -48,6 +49,13 @@ TUI:
 
 ```powershell
 runner-monitor --start-repo SGribanov/DeltaG
+runner-monitor --start-current
 runner-monitor --stop-repo SGribanov/DeltaG
 runner-monitor --restart-repo SGribanov/DeltaG
+```
+
+From any project root with a GitHub `origin`, Codex can run:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\Repos\RunnerMonitor\runner-monitor.ps1 --start-current
 ```

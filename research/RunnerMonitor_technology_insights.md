@@ -31,3 +31,9 @@ Starting a repository through RunnerMonitor should call `systemctl start` inside
 WSL so the runner stays in the background. Disabling boot autostart for current
 Windows and WSL services requires elevated/admin or root authentication; the
 non-elevated session cannot change those startup policies.
+
+## 2026-06-03 -- Wrapper command
+
+`runner-monitor.ps1` builds `bin\runner-monitor.exe` on first use and forwards
+arguments to it. This gives Codex a stable command path:
+`powershell -NoProfile -ExecutionPolicy Bypass -File C:\Repos\RunnerMonitor\runner-monitor.ps1 --start-current`.
