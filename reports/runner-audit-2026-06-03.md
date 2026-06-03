@@ -4,14 +4,13 @@
 |---|---|
 | Project | RunnerMonitor |
 | Source | `runner-monitor --audit` |
-| Status | partially executed |
+| Status | active |
 
 ## Summary
 
-One runner was removed after explicit approval: `legion-ubuntu-wsl-x64`.
-Remaining runners are separated into `keep`, `investigate`, and
-`candidate-remove`. Removal commands are provided only for candidate runners and
-must not be executed without explicit approval.
+Approved removals and one reconfiguration have been completed. The latest audit
+has no `candidate-remove` rows. Do not delete any additional runner without a
+new explicit approval naming repo, runner, host, and path.
 
 ## Completed Removals
 
@@ -21,6 +20,12 @@ must not be executed without explicit approval.
 | `SGribanov/DeltaG` | `legion-windows-x64` | `C:\actions-runner-win-x64` | `C:\Runners-backup\actions-runner-win-x64-legion-windows-x64-2026-06-03.zip` |
 | `SGribanov/NewGenOsEngine` | `newgenosengine-windows-local` | `C:\actions-runner-newgenosengine` | `C:\Runners-backup\actions-runner-newgenosengine-windows-local-2026-06-03.zip` |
 | `SGribanov/NewGenOsEngine` | `newgen-wsl-linux` | `/home/gsv777/newgen-runner` | `/home/gsv777/runner-backups/newgen-runner-newgen-wsl-linux-2026-06-03.tar.gz` |
+
+## Completed Reconfiguration
+
+| Repo | Runner | Path | Result |
+|---|---|---|---|
+| `SGribanov/MyCloneOsEngine` | `mycloneosengine-linux` | `/home/gsv777/myclone-runner-linux` | Reconfigured with GitHub runner id `24`; systemd unit `actions.runner.SGribanov-MyCloneOsEngine.mycloneosengine-linux.service` is active/enabled. |
 
 ## Resolved Elevated Cleanup
 
@@ -32,7 +37,9 @@ then removed manually from WSL with sudo. Current WSL unit list no longer shows
 
 | Repo | Runner | Host | Evidence |
 |---|---|---|---|
+| `SGribanov/AU` | `windows-local` | local Windows | Policy keep: AU project will continue. |
 | `SGribanov/IdeaBox` | `ideabox-runner` | local Windows | Service-managed and GitHub online. |
+| `SGribanov/MyCloneOsEngine` | `mycloneosengine-linux` | WSL Ubuntu | Service-managed, systemd active, GitHub online. |
 
 ## Investigate Before Any Cleanup
 
@@ -41,43 +48,13 @@ then removed manually from WSL with sudo. Current WSL unit list no longer shows
 | `SGribanov/BackTester` | `backtester-runner` | local Windows | GitHub online, but not service-managed locally. | Decide whether to install as service or remove/recreate later. |
 | `SGribanov/DeltaG` | `deltag-win` | local Windows | Running, GitHub online, repo has `1/1 stale` queued jobs. | Keep for now; investigate queued job label/routing first. |
 | `SGribanov/MyCloneOsEngine` | `mycloneosengine-windows-local` | local Windows | GitHub online, but not service-managed locally. | Decide whether it should become service-managed. |
-| `SGribanov/DeltaG` | `deltag-linux-wsl` | WSL Ubuntu | Active, GitHub online, currently busy, repo has `2/1 stale` queued jobs. | Keep for now; investigate queued job label/routing first. |
+| `SGribanov/DeltaG` | `deltag-linux-wsl` | WSL Ubuntu | Active, GitHub online, repo has `1/1 stale` queued jobs. | Keep for now; investigate queued job label/routing first. |
 
 ## Candidate Remove
 
-These runners are local configured/manual or inactive and are not visible in the
-current GitHub API status. The commands below are intentionally separated into
-backup, service/GitHub registration check, and deletion steps.
-
-### `SGribanov/AU` -- `windows-local`
-
-Path: `C:\actions-runner`
-
-```powershell
-# Backup first
-New-Item -ItemType Directory -Force -Path C:\Runners-backup | Out-Null
-Compress-Archive -LiteralPath C:\actions-runner -DestinationPath C:\Runners-backup\actions-runner-au-windows-local.zip -Force
-
-# Confirm no service exists
-Get-Service | Where-Object { $_.Name -like 'actions.runner.*AU*' -or $_.Name -like '*windows-local*' }
-
-# Delete only after approval
-Remove-Item -LiteralPath C:\actions-runner -Recurse -Force
-```
-
-### `SGribanov/MyCloneOsEngine` -- `mycloneosengine-linux`
-
-Path: `/home/gsv777/myclone-runner-linux`
-
-```powershell
-wsl.exe sh -lc 'mkdir -p ~/runner-backups && tar -czf ~/runner-backups/myclone-runner-linux.tar.gz -C /home/gsv777 myclone-runner-linux'
-wsl.exe sh -lc 'systemctl list-unit-files "actions.runner.*.service" --no-pager | grep -i myclone || true'
-wsl.exe sh -lc 'rm -rf /home/gsv777/myclone-runner-linux'
-```
+None in the latest audit.
 
 ## Approval Needed
 
-Deletion requires explicit approval naming each runner:
+No deletion approval is pending.
 
-- `SGribanov/AU windows-local C:\actions-runner`
-- `SGribanov/MyCloneOsEngine mycloneosengine-linux /home/gsv777/myclone-runner-linux`

@@ -75,3 +75,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -File C:\Repos\RunnerMonitor\scrip
 
 Runner cleanup proposals live in `reports/`; do not execute removal commands
 without explicit runner-by-runner approval.
+
+Manual audit decisions such as known keep runners live in
+`runner-policy.json`.

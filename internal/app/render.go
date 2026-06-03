@@ -50,6 +50,7 @@ func RenderAudit(inventory Inventory) string {
 		return "No runners discovered.\n"
 	}
 
+	policy := LoadAuditPolicy()
 	var b strings.Builder
 	b.WriteString(fmt.Sprintf("%-3s %-17s %-18s %-28s %-9s %-10s %-7s %-11s %s\n",
 		"#", "Decision", "Project", "Runner", "Local", "GitHub", "Busy", "Queue", "Evidence"))
@@ -57,7 +58,7 @@ func RenderAudit(inventory Inventory) string {
 	b.WriteString("\n")
 
 	for i, r := range inventory.Runners {
-		decision, evidence := AuditRunner(r)
+		decision, evidence := AuditRunnerWithPolicy(r, policy)
 		busy := "false"
 		if r.Busy {
 			busy = "true"

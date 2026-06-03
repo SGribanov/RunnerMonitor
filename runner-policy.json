@@ -1,0 +1,10 @@
+{
+  "keep": [
+    {
+      "repo": "SGribanov/AU",
+      "runner": "windows-local",
+      "reason": "AU project will continue; keep this runner for future work."
+    }
+  ]
+}
+

@@ -51,3 +51,16 @@ service control.
 The TUI/audit table should show the project explicitly. A short `Project` column
 derived from the GitHub repo name is easier to scan than only showing the full
 `owner/repo` string.
+
+## 2026-06-03 -- Audit policy
+
+RunnerMonitor supports a small `runner-policy.json` keep list. This lets the
+operator preserve known future-use runners, such as `SGribanov/AU windows-local`,
+without hard-coding exceptions into audit logic.
+
+## 2026-06-03 -- MyClone WSL service
+
+The existing `/home/gsv777/myclone-runner-linux` folder could be safely reused:
+back up local runner config, re-register with a GitHub registration token using
+`config.sh --replace`, then install/start the official WSL systemd service with
+`svc.sh`. GitHub reported `mycloneosengine-linux` online as runner id `24`.

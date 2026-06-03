@@ -78,6 +78,14 @@ func TestAuditRunnerFlagsUnitOnlyRunner(t *testing.T) {
 	}
 }
 
+func TestAuditPolicyKeepsRunner(t *testing.T) {
+	policy := AuditPolicy{Keep: []AuditPolicyRule{{Repo: "SGribanov/AU", Runner: "windows-local", Reason: "needed"}}}
+	decision, evidence := AuditRunnerWithPolicy(Runner{Repo: "SGribanov/AU", Name: "windows-local", LocalState: "manual"}, policy)
+	if decision != "keep" || evidence != "policy keep: needed" {
+		t.Fatalf("decision/evidence = %q/%q", decision, evidence)
+	}
+}
+
 func TestRepoAndRunnerFromActionsService(t *testing.T) {
 	repo, name := repoAndRunnerFromActionsService("actions.runner.SGribanov-NewGenOsEngine.newgen-wsl-linux.service")
 	if repo != "SGribanov/NewGenOsEngine" || name != "newgen-wsl-linux" {

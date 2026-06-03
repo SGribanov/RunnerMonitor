@@ -17,17 +17,18 @@
 - Removed approved runner `newgen-wsl-linux` at `/home/gsv777/newgen-runner`.
 - Created backup `/home/gsv777/runner-backups/newgen-runner-newgen-wsl-linux-2026-06-03.tar.gz`.
 - WSL systemd unit cleanup was completed manually; `actions.runner.SGribanov-NewGenOsEngine.newgen-wsl-linux.service` is no longer present.
+- Marked `AU/windows-local` as keep via `runner-policy.json`.
+- Reattached `mycloneosengine-linux`; it is now service-managed, active, and GitHub online.
 
 ## Current audit snapshot
 
-- Candidate remove: `windows-local`, `mycloneosengine-linux`.
+- Candidate remove: none.
 - Investigate: `backtester-runner`, DeltaG runners with queued jobs, `mycloneosengine-windows-local`.
-- Keep: `ideabox-runner`.
+- Keep: `windows-local`, `ideabox-runner`, `mycloneosengine-linux`.
 
 ## Next
 
-- Operator decides which remaining `candidate-remove` runners are actually safe to remove.
-- Operator decides which remaining `candidate-remove` runners are actually safe to remove.
+- Investigate remaining manual/queued runners.
 
 ## Blockers
 

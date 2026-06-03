@@ -3,6 +3,13 @@ package app
 import "strings"
 
 func AuditRunner(r Runner) (decision string, evidence string) {
+	return AuditRunnerWithPolicy(r, AuditPolicy{})
+}
+
+func AuditRunnerWithPolicy(r Runner, policy AuditPolicy) (decision string, evidence string) {
+	if reason := policy.KeepReason(r); reason != "" {
+		return "keep", "policy keep: " + reason
+	}
 	if r.Busy {
 		return "keep", "runner is currently busy"
 	}

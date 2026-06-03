@@ -75,6 +75,13 @@ The stale `actions.runner.SGribanov-NewGenOsEngine.newgen-wsl-linux.service`
 unit was manually removed from WSL with sudo. Current WSL unit inventory only
 shows the remaining DeltaG WSL runner service.
 
+## 2026-06-03 -- AU keep and MyClone reattach
+
+`SGribanov/AU windows-local` is no longer a removal candidate because AU work
+will continue. `mycloneosengine-linux` was reattached to `SGribanov/MyCloneOsEngine`,
+installed as a WSL systemd service, and verified online in GitHub. The cleanup
+audit now has no `candidate-remove` rows.
+
 ## 2026-06-03 -- Manual startup policy
 
 Runners should not auto-start at boot. The desired workflow is for Codex or the
