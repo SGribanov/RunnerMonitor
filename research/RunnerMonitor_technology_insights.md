@@ -37,3 +37,11 @@ non-elevated session cannot change those startup policies.
 `runner-monitor.ps1` builds `bin\runner-monitor.exe` on first use and forwards
 arguments to it. This gives Codex a stable command path:
 `powershell -NoProfile -ExecutionPolicy Bypass -File C:\Repos\RunnerMonitor\runner-monitor.ps1 --start-current`.
+
+## 2026-06-03 -- Already-running services
+
+Starting an already running Windows service or active WSL unit can still require
+permissions if the command blindly calls `Start-Service` or `systemctl start`.
+RunnerMonitor should short-circuit `start` when local state is already
+`running` or `active`, returning `already running` instead of invoking privileged
+service control.

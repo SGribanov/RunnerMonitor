@@ -49,6 +49,14 @@ func TestRunLifecycleProtectsBusyRunner(t *testing.T) {
 	}
 }
 
+func TestRunLifecycleStartAlreadyRunningDoesNotRequireServiceAccess(t *testing.T) {
+	got := RunLifecycle("start", Runner{Name: "running-runner", LocalState: "running", ServiceName: "svc", ControlMode: "unsupported"})
+	want := "running-runner already running"
+	if got != want {
+		t.Fatalf("RunLifecycle = %q, want %q", got, want)
+	}
+}
+
 func TestAuditRunnerCandidateRemove(t *testing.T) {
 	decision, _ := AuditRunner(Runner{Name: "old", LocalState: "manual", GitHubStatus: "unknown"})
 	if decision != "candidate-remove" {

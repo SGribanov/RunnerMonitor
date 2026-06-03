@@ -14,6 +14,8 @@ Tasks:
 - [x] Add `--start-current`, `--stop-current`, and `--restart-current`.
 - [x] Add PowerShell wrapper that builds the binary on first use.
 - [x] Add parent `C:\Repos\AGENTS.md` policy for Codex startup.
+- [x] Add elevated autostart-disable script.
+- [x] Add optional per-repo pre-push hook installer.
 - [x] Skip manual runners clearly.
 
 Validation:
@@ -39,6 +41,12 @@ sc.exe config actions.runner.SGribanov-DeltaG.deltag-win start= demand
 sc.exe config actions.runner.SGribanov-IdeaBox.ideabox-runner start= demand
 wsl.exe sudo systemctl disable actions.runner.SGribanov-DeltaG.deltag-linux-wsl.service
 wsl.exe sudo systemctl disable actions.runner.SGribanov-NewGenOsEngine.newgen-wsl-linux.service
+```
+
+Or run:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\Repos\RunnerMonitor\scripts\disable-autostart-elevated.ps1
 ```
 
 ## WSL background rule

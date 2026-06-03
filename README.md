@@ -59,3 +59,15 @@ From any project root with a GitHub `origin`, Codex can run:
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File C:\Repos\RunnerMonitor\runner-monitor.ps1 --start-current
 ```
+
+Optional local git hook for a repository:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\Repos\RunnerMonitor\scripts\install-prepush-hook.ps1 -RepoPath C:\Repos\DeltaG
+```
+
+Disable runner autostart from an elevated PowerShell session:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\Repos\RunnerMonitor\scripts\disable-autostart-elevated.ps1
+```

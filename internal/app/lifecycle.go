@@ -20,6 +20,9 @@ func RunLifecycle(action string, runner Runner) string {
 	if runner.Busy && !force && (action == "stop" || action == "restart") {
 		return fmt.Sprintf("%s is busy; use force-%s to override", runner.Name, action)
 	}
+	if action == "start" && isAlreadyRunning(runner.LocalState) {
+		return fmt.Sprintf("%s already running", runner.Name)
+	}
 	if runner.ServiceName == "" {
 		return fmt.Sprintf("%s is not service-managed; cannot %s", runner.Name, action)
 	}
@@ -109,4 +112,9 @@ func runCommandWithOutput(name string, args ...string) error {
 		return fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out)))
 	}
 	return nil
+}
+
+func isAlreadyRunning(state string) bool {
+	state = strings.ToLower(strings.TrimSpace(state))
+	return state == "running" || state == "active"
 }
