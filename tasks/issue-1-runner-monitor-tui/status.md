@@ -21,6 +21,7 @@ Milestone 2: TUI commands.
 - Manual Windows `run.cmd` runners can now be started/stopped/restarted by RunnerMonitor in a hidden background process.
 - Added generated hourglass icon assets and embedded the static `.ico` into the Windows exe through a `.syso` resource.
 - TUI startup now shows animated hourglass symbols and `Ожидайте, идет опрос раннеров...` while the first runner refresh runs asynchronously.
+- Documented SSH commands for opening RunnerMonitor on a future dedicated remote runner host and starting remote project runners.
 - Added TUI commands: `refresh`, `start N`, `stop N`, `restart N`, `logs N`, `q`.
 - Added `--once` smoke mode.
 - Added `--audit`, `--start-repo`, `--stop-repo`, `--restart-repo`, and `--disable-autostart`.
@@ -44,6 +45,14 @@ Milestone 2: TUI commands.
 - Use Go for a small Windows/Linux binary.
 - Use local TUI over SSH for the future dedicated runner machine.
 - Use GitHub CLI authentication for v1 instead of introducing app credentials.
+
+## Remote runner host commands
+
+```powershell
+ssh -t runnerbox "powershell -NoProfile -ExecutionPolicy Bypass -File C:/Repos/RunnerMonitor/runner-monitor.ps1"
+ssh runnerbox "cd C:/Repos/DeltaG; powershell -NoProfile -ExecutionPolicy Bypass -File C:/Repos/RunnerMonitor/runner-monitor.ps1 --start-current"
+ssh runnerbox "powershell -NoProfile -ExecutionPolicy Bypass -File C:/Repos/RunnerMonitor/runner-monitor.ps1 --start-repo SGribanov/DeltaG"
+```
 
 ## Commands
 

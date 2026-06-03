@@ -52,14 +52,14 @@ Validation:
 
 ## Milestone 3: Remote-ready design
 
-Status: [ ]
+Status: [~]
 
 Goal: prepare the provider boundary for a future dedicated runner host over SSH.
 
 Tasks:
-- [ ] Keep host and transport in every runner record.
+- [x] Keep host and transport in every runner record.
 - [ ] Isolate local Windows, WSL, GitHub, and lifecycle behavior behind provider/controller functions.
-- [ ] Document SSH host configuration shape without requiring a daemon.
+- [x] Document SSH host configuration shape without requiring a daemon.
 
 Definition of done:
 - Future SSH provider can be added without changing the TUI command model.

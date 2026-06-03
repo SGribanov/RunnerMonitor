@@ -116,3 +116,21 @@ animates `⌛`/`⏳` and shows `Ожидайте, идет опрос ранне
 runs as a Bubble Tea command. CLI modes such as `--once`, `--audit`, and
 project lifecycle commands still refresh synchronously and do not print spinner
 frames, preserving machine-friendly output.
+
+## 2026-06-03 -- Remote SSH command shape
+
+Remote runner host support does not require a daemon for the first migration
+step. The operator can allocate a TTY and run the TUI on the remote Windows host:
+
+```powershell
+ssh -t runnerbox "powershell -NoProfile -ExecutionPolicy Bypass -File C:/Repos/RunnerMonitor/runner-monitor.ps1"
+```
+
+Non-interactive Codex/project startup can run:
+
+```powershell
+ssh runnerbox "cd C:/Repos/DeltaG; powershell -NoProfile -ExecutionPolicy Bypass -File C:/Repos/RunnerMonitor/runner-monitor.ps1 --start-current"
+```
+
+Future `--host` support can wrap this command shape rather than changing the TUI
+command model.

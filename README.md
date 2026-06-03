@@ -62,6 +62,40 @@ From any project root with a GitHub `origin`, Codex can run:
 powershell -NoProfile -ExecutionPolicy Bypass -File C:\Repos\RunnerMonitor\runner-monitor.ps1 --start-current
 ```
 
+## Remote Runner Host
+
+When runners move to a dedicated machine on the network, connect to that machine
+over SSH and run RunnerMonitor there. Configure an SSH alias such as `runnerbox`
+in `%USERPROFILE%\.ssh\config`, then use these commands from the operator
+machine.
+
+Open the remote TUI on a Windows runner host:
+
+```powershell
+ssh -t runnerbox "powershell -NoProfile -ExecutionPolicy Bypass -File C:/Repos/RunnerMonitor/runner-monitor.ps1"
+```
+
+Start runners for the current remote project before Codex pushes or waits for
+CI:
+
+```powershell
+ssh runnerbox "cd C:/Repos/DeltaG; powershell -NoProfile -ExecutionPolicy Bypass -File C:/Repos/RunnerMonitor/runner-monitor.ps1 --start-current"
+```
+
+Start a specific repository on the remote host without relying on current
+directory detection:
+
+```powershell
+ssh runnerbox "powershell -NoProfile -ExecutionPolicy Bypass -File C:/Repos/RunnerMonitor/runner-monitor.ps1 --start-repo SGribanov/DeltaG"
+```
+
+For a Linux runner host, use the same pattern with the compiled binary:
+
+```powershell
+ssh -t runnerbox "cd /opt/RunnerMonitor && ./runner-monitor"
+ssh runnerbox "cd /srv/DeltaG && /opt/RunnerMonitor/runner-monitor --start-current"
+```
+
 Optional local git hook for a repository:
 
 ```powershell

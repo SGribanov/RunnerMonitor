@@ -23,6 +23,19 @@ operator machine and controls the future dedicated runner host remotely. This
 keeps v1 lightweight and avoids introducing a daemon before OneDev migration
 requirements are known.
 
+The operator-facing command shape is explicit SSH into the runner host. Open
+the remote TUI with:
+
+```powershell
+ssh -t runnerbox "powershell -NoProfile -ExecutionPolicy Bypass -File C:/Repos/RunnerMonitor/runner-monitor.ps1"
+```
+
+Start runners for a remote project before CI work with:
+
+```powershell
+ssh runnerbox "cd C:/Repos/DeltaG; powershell -NoProfile -ExecutionPolicy Bypass -File C:/Repos/RunnerMonitor/runner-monitor.ps1 --start-current"
+```
+
 ## 2026-06-03 -- Runner cleanup policy
 
 Runner cleanup must be evidence-driven and explicit. The app should classify
