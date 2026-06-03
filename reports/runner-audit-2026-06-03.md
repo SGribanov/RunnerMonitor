@@ -26,6 +26,7 @@ new explicit approval naming repo, runner, host, and path.
 | Repo | Runner | Path | Result |
 |---|---|---|---|
 | `SGribanov/MyCloneOsEngine` | `mycloneosengine-linux` | `/home/gsv777/myclone-runner-linux` | Reconfigured with GitHub runner id `24`; systemd unit `actions.runner.SGribanov-MyCloneOsEngine.mycloneosengine-linux.service` is active/enabled. |
+| `SGribanov/BackTester` | `backtester-runner` | `C:\Runners\SGribanov-BackTester\backtester-runner` | Moved from `C:\actions-runner-backtester`; backup `C:\Runners-backup\actions-runner-backtester-backtester-runner-2026-06-03.zip`; fixed `bin`/`externals` junctions; GitHub online. |
 
 ## Resolved Elevated Cleanup
 
@@ -38,7 +39,7 @@ then removed manually from WSL with sudo. Current WSL unit list no longer shows
 | Repo | Runner | Host | Evidence |
 |---|---|---|---|
 | `SGribanov/AU` | `windows-local` | local Windows | Policy keep: AU project will continue. |
-| `SGribanov/BackTester` | `backtester-runner` | local Windows | Manual `run.cmd` runner is running, GitHub online, and now controllable by RunnerMonitor. |
+| `SGribanov/BackTester` | `backtester-runner` | local Windows | Manual `run.cmd` runner is running from `C:\Runners\SGribanov-BackTester\backtester-runner`, GitHub online, and controllable by RunnerMonitor. |
 | `SGribanov/IdeaBox` | `ideabox-runner` | local Windows | Service-managed and GitHub online. |
 | `SGribanov/MyCloneOsEngine` | `mycloneosengine-windows-local` | local Windows | Manual `run.cmd` runner is running, GitHub online, and now controllable by RunnerMonitor. |
 | `SGribanov/MyCloneOsEngine` | `mycloneosengine-linux` | WSL Ubuntu | Service-managed, systemd active, GitHub online. |

@@ -154,3 +154,16 @@ the new path, often with elevated PowerShell or sudo. RunnerMonitor issue #5
 tracks the migration into `C:\Runners` and `/home/gsv777/Runners`; each runner
 move needs a runner-specific rollback plan and validation with `--audit` plus
 GitHub online status.
+
+## 2026-06-03 -- BackTester runner move
+
+`SGribanov/BackTester backtester-runner` was moved from
+`C:\actions-runner-backtester` to
+`C:\Runners\SGribanov-BackTester\backtester-runner` after backup
+`C:\Runners-backup\actions-runner-backtester-backtester-runner-2026-06-03.zip`.
+The first post-move start failed because `bin` and `externals` were Windows
+junctions still targeting `C:\actions-runner-backtester\bin.2.334.0` and
+`C:\actions-runner-backtester\externals.2.334.0`. Retargeting those junctions
+to the versioned folders under the new root fixed startup; GitHub then reported
+the runner online and `--start-current` from `C:\Repos\BackTester` returned
+`backtester-runner already running`.

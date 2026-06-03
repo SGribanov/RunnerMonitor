@@ -32,7 +32,7 @@ Future dedicated Linux host:
 | Repo | Runner | Current path | Target path | Control mode | Move now? |
 |---|---|---|---|---|---|
 | `SGribanov/AU` | `windows-local` | `C:\actions-runner` | `C:\Runners\SGribanov-AU\windows-local` | manual Windows | later, when AU work resumes |
-| `SGribanov/BackTester` | `backtester-runner` | `C:\actions-runner-backtester` | `C:\Runners\SGribanov-BackTester\backtester-runner` | manual Windows | yes, if idle |
+| `SGribanov/BackTester` | `backtester-runner` | `C:\actions-runner-backtester` | `C:\Runners\SGribanov-BackTester\backtester-runner` | manual Windows | done |
 | `SGribanov/DeltaG` | `deltag-win` | `C:\github-runners\deltag` | `C:\Runners\SGribanov-DeltaG\deltag-win` | Windows service | no, currently busy |
 | `SGribanov/IdeaBox` | `ideabox-runner` | `C:\actions-runner-ideabox` | `C:\Runners\SGribanov-IdeaBox\ideabox-runner` | Windows service | yes, if idle/admin available |
 | `SGribanov/MyCloneOsEngine` | `mycloneosengine-windows-local` | `C:\actions-runner-mycloneosengine` | `C:\Runners\SGribanov-MyCloneOsEngine\mycloneosengine-windows-local` | manual Windows | yes, if idle |
@@ -49,7 +49,8 @@ Future dedicated Linux host:
 4. Stop only the runner being moved.
 5. Move the folder to the target path.
 6. Reconfigure path-bound control:
-   - manual Windows: update RunnerMonitor audit docs; no service update needed.
+   - manual Windows: update runner junctions such as `bin` and `externals` if
+     they still target the old path, then update RunnerMonitor audit docs.
    - Windows service: uninstall/reinstall service or re-register with
      `config.cmd --replace` if needed.
    - WSL systemd: uninstall/reinstall `svc.sh` from the new path or re-register
@@ -69,3 +70,16 @@ Future dedicated Linux host:
   and a rollback backup exists.
 - Do not modify GitHub registrations unless the specific runner migration plan
   requires it.
+
+## Windows junction note
+
+GitHub Actions runner auto-update can leave `bin` and `externals` as junctions
+to versioned folders under the original runner root. After moving a Windows
+runner folder, verify with:
+
+```powershell
+Get-Item -LiteralPath '<new-runner-path>\bin','<new-runner-path>\externals' | Format-List FullName,LinkType,Target
+```
+
+If the targets still point to the old folder, remove and recreate only those
+junctions so they point to the versioned folders under the new root.
