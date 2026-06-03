@@ -23,12 +23,22 @@
 ## Current audit snapshot
 
 - Candidate remove: none.
-- Investigate: `backtester-runner` and `mycloneosengine-windows-local` are running manual Windows processes; DeltaG still has queued jobs.
-- Keep: `windows-local`, `ideabox-runner`, `mycloneosengine-linux`.
+- Investigate: DeltaG still has queued jobs.
+- Keep: `windows-local`, `backtester-runner`, `ideabox-runner`, `mycloneosengine-windows-local`, `mycloneosengine-linux`.
+
+## DeltaG queue note
+
+- Remaining queued run: `26447257991`.
+- Workflow/title: `ci` / `research(margin): diagnose vertical freshness drift`.
+- Branch/event: `codex/604-vertical-freshness-diagnostic` / `pull_request`.
+- Created/updated: `2026-05-26T10:36:43Z` / `2026-05-26T10:52:39Z`.
+- Jobs: `0`.
+- Related PRs `#709` and `#710` are closed.
+- DeltaG runners `deltag-win` and `deltag-linux-wsl` are online and not busy.
 
 ## Next
 
-- Investigate remaining manual/queued runners.
+- Decide whether to cancel the remaining stale DeltaG workflow run or teach audit to ignore closed-PR/no-job stale runs.
 
 ## Blockers
 

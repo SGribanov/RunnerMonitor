@@ -38,17 +38,28 @@ then removed manually from WSL with sudo. Current WSL unit list no longer shows
 | Repo | Runner | Host | Evidence |
 |---|---|---|---|
 | `SGribanov/AU` | `windows-local` | local Windows | Policy keep: AU project will continue. |
+| `SGribanov/BackTester` | `backtester-runner` | local Windows | Manual `run.cmd` runner is running, GitHub online, and now controllable by RunnerMonitor. |
 | `SGribanov/IdeaBox` | `ideabox-runner` | local Windows | Service-managed and GitHub online. |
+| `SGribanov/MyCloneOsEngine` | `mycloneosengine-windows-local` | local Windows | Manual `run.cmd` runner is running, GitHub online, and now controllable by RunnerMonitor. |
 | `SGribanov/MyCloneOsEngine` | `mycloneosengine-linux` | WSL Ubuntu | Service-managed, systemd active, GitHub online. |
 
 ## Investigate Before Any Cleanup
 
 | Repo | Runner | Host | Evidence | Suggested action |
 |---|---|---|---|---|
-| `SGribanov/BackTester` | `backtester-runner` | local Windows | Process running and GitHub online, but not service-managed locally. | Decide whether to install as service or keep manual/background. |
 | `SGribanov/DeltaG` | `deltag-win` | local Windows | Running, GitHub online, repo has `1/1 stale` queued jobs. | Keep for now; investigate queued job label/routing first. |
-| `SGribanov/MyCloneOsEngine` | `mycloneosengine-windows-local` | local Windows | Process running and GitHub online, but not service-managed locally. | Decide whether it should become service-managed. |
 | `SGribanov/DeltaG` | `deltag-linux-wsl` | WSL Ubuntu | Active, GitHub online, repo has `1/1 stale` queued jobs. | Keep for now; investigate queued job label/routing first. |
+
+### DeltaG Stale Queue Detail
+
+The remaining queued DeltaG run is `26447257991`, workflow `ci`, display title
+`research(margin): diagnose vertical freshness drift`, event `pull_request`,
+branch `codex/604-vertical-freshness-diagnostic`, created
+`2026-05-26T10:36:43Z`, updated `2026-05-26T10:52:39Z`.
+GitHub reports zero jobs for the run. Related PRs `#709` and `#710` for the same
+branch are both closed. Current DeltaG self-hosted runners `deltag-win` and
+`deltag-linux-wsl` are online and not busy, so this looks like a stale GitHub
+Actions run rather than missing local runner capacity.
 
 ## Candidate Remove
 

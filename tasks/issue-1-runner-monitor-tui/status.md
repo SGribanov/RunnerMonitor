@@ -18,6 +18,7 @@ Milestone 2: TUI commands.
 - Added GitHub API status merge and queued/stale workflow counts.
 - TUI/audit tables now show an explicit `Project` column.
 - Windows manual runner processes now appear as `Local=running` while remaining `ControlMode=manual`.
+- Manual Windows `run.cmd` runners can now be started/stopped/restarted by RunnerMonitor in a hidden background process.
 - Added TUI commands: `refresh`, `start N`, `stop N`, `restart N`, `logs N`, `q`.
 - Added `--once` smoke mode.
 - Added `--audit`, `--start-repo`, `--stop-repo`, `--restart-repo`, and `--disable-autostart`.
@@ -27,12 +28,12 @@ Milestone 2: TUI commands.
 
 ## In progress
 
-- Hardening TUI lifecycle behavior and preparing commit/push.
+- Hardening DeltaG queued-job diagnostics and preparing commit/push.
 - Autostart disable requires elevated Windows/root WSL permissions.
 
 ## Next
 
-- Add any missing test coverage around command parsing/lifecycle edge cases.
+- Investigate the DeltaG stale queued workflow and label/routing.
 - Run autostart disable from elevated context or document handoff commands.
 
 ## Decisions

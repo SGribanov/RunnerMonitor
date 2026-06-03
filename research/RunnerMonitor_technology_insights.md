@@ -71,3 +71,23 @@ Manual Windows runners can be online because `Runner.Listener.exe` is running
 from the runner folder even when no Windows service exists. Discovery should
 map `Runner.Listener.exe` executable paths back to runner roots so the TUI shows
 `Local=running` instead of only `manual`.
+
+## 2026-06-03 -- Manual Windows lifecycle control
+
+Manual Windows runners do not need to be converted to Windows Services before
+RunnerMonitor can control them. For `ControlMode=manual` and `Transport=windows`,
+the app can start `run.cmd` with `Start-Process -WindowStyle Hidden` and stop
+only runner processes whose executable paths are inside the specific runner
+folder. This keeps `BackTester/backtester-runner` and
+`MyCloneOsEngine/mycloneosengine-windows-local` usable through the same TUI and
+`--start-current` workflow while preserving the busy-runner stop protection.
+
+## 2026-06-03 -- DeltaG stale queue diagnosis
+
+DeltaG's remaining queued run `26447257991` has no jobs according to the GitHub
+jobs API, belongs to closed PR branch `codex/604-vertical-freshness-diagnostic`,
+and both current DeltaG self-hosted runners are online/not busy. This points to
+a stale GitHub Actions run rather than a local runner availability problem. The
+next engineering choice is either to cancel stale runs explicitly or add a
+queue-diagnostics path that can distinguish closed-PR/no-job stale runs from
+real queued work.

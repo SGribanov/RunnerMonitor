@@ -14,6 +14,7 @@ standard service mechanisms such as Windows Services, Linux systemd, and SSH.
 - Show the project each runner belongs to in the TUI/audit tables.
 - Control service-managed runners with short commands such as `start 1`,
   `stop 1`, and `restart 1`.
+- Control manual Windows `run.cmd` runners in a hidden background process.
 - Keep runner folder migration and OneDev support as follow-up phases.
 
 ## Requirements

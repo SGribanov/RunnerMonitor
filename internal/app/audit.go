@@ -20,6 +20,9 @@ func AuditRunnerWithPolicy(r Runner, policy AuditPolicy) (decision string, evide
 		return "investigate", "repo has queued jobs; check labels/routes before removal"
 	}
 	if r.GitHubStatus == "online" && r.ControlMode == "manual" {
+		if r.Transport == "windows" && r.LocalState == "running" {
+			return "keep", "manual Windows runner is controllable by RunnerMonitor"
+		}
 		return "investigate", "online in GitHub but not service-managed locally"
 	}
 	if r.GitHubStatus == "online" && (r.LocalState == "running" || r.LocalState == "active") {

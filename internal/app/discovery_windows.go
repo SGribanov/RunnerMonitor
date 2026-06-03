@@ -160,6 +160,60 @@ func runWindowsService(action string, serviceName string) error {
 	return nil
 }
 
+func runWindowsManualRunner(action string, runnerPath string) error {
+	switch action {
+	case "start":
+		return startWindowsManualRunner(runnerPath)
+	case "stop":
+		return stopWindowsManualRunner(runnerPath)
+	case "restart":
+		if err := stopWindowsManualRunner(runnerPath); err != nil {
+			return err
+		}
+		return startWindowsManualRunner(runnerPath)
+	default:
+		return fmt.Errorf("unsupported action %q", action)
+	}
+}
+
+func startWindowsManualRunner(runnerPath string) error {
+	script := `
+param([string]$RunnerPath)
+$run = Join-Path $RunnerPath 'run.cmd'
+if (!(Test-Path -LiteralPath $run)) {
+    throw "run.cmd not found at $run"
+}
+Start-Process -FilePath $run -WorkingDirectory $RunnerPath -WindowStyle Hidden
+`
+	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script, runnerPath)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out)))
+	}
+	return nil
+}
+
+func stopWindowsManualRunner(runnerPath string) error {
+	script := `
+param([string]$RunnerPath)
+$resolved = (Resolve-Path -LiteralPath $RunnerPath).Path.TrimEnd('\')
+$prefix = $resolved + '\'
+$names = @('Runner.Listener.exe', 'Runner.Worker.exe', 'Runner.PluginHost.exe')
+$procs = Get-CimInstance Win32_Process | Where-Object {
+    $_.ExecutablePath -and
+    $_.ExecutablePath.StartsWith($prefix, [System.StringComparison]::OrdinalIgnoreCase) -and
+    $names -contains $_.Name
+}
+foreach ($proc in $procs) {
+    Stop-Process -Id $proc.ProcessId -Force
+}
+`
+	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script, runnerPath)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out)))
+	}
+	return nil
+}
+
 func disableWindowsServiceAutostart(serviceName string) error {
 	cmd := exec.Command("powershell", "-NoProfile", "-Command", fmt.Sprintf("Set-Service -Name %q -StartupType Manual", serviceName))
 	if out, err := cmd.CombinedOutput(); err != nil {

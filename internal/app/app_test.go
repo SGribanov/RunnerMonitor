@@ -57,6 +57,20 @@ func TestRunLifecycleStartAlreadyRunningDoesNotRequireServiceAccess(t *testing.T
 	}
 }
 
+func TestRunLifecycleManualWindowsAlreadyRunningDoesNotSpawn(t *testing.T) {
+	got := RunLifecycle("start", Runner{
+		Name:        "manual-windows",
+		LocalState:  "running",
+		ControlMode: "manual",
+		Transport:   "windows",
+		Path:        `C:\actions-runner-manual`,
+	})
+	want := "manual-windows already running"
+	if got != want {
+		t.Fatalf("RunLifecycle = %q, want %q", got, want)
+	}
+}
+
 func TestAuditRunnerCandidateRemove(t *testing.T) {
 	decision, _ := AuditRunner(Runner{Name: "old", LocalState: "manual", GitHubStatus: "unknown"})
 	if decision != "candidate-remove" {
@@ -74,6 +88,19 @@ func TestAuditRunnerInvestigatesQueuedRepo(t *testing.T) {
 func TestAuditRunnerInvestigatesManualRunningRunner(t *testing.T) {
 	decision, evidence := AuditRunner(Runner{Name: "manual-running", LocalState: "running", GitHubStatus: "online", ControlMode: "manual"})
 	if decision != "investigate" || evidence != "online in GitHub but not service-managed locally" {
+		t.Fatalf("decision/evidence = %q/%q", decision, evidence)
+	}
+}
+
+func TestAuditRunnerKeepsControllableManualWindowsRunner(t *testing.T) {
+	decision, evidence := AuditRunner(Runner{
+		Name:         "manual-windows",
+		LocalState:   "running",
+		GitHubStatus: "online",
+		ControlMode:  "manual",
+		Transport:    "windows",
+	})
+	if decision != "keep" || evidence != "manual Windows runner is controllable by RunnerMonitor" {
 		t.Fatalf("decision/evidence = %q/%q", decision, evidence)
 	}
 }
@@ -104,7 +131,7 @@ func TestRunRepoLifecycleSkipsManualRunner(t *testing.T) {
 	got := RunRepoLifecycle("start", "SGribanov/RunnerMonitor", Inventory{Runners: []Runner{{
 		Name: "manual", Repo: "SGribanov/RunnerMonitor",
 	}}})
-	if got != "skip manual: not service-managed\nno service-managed runners found for SGribanov/RunnerMonitor\n" {
+	if got != "skip manual: not controllable\nno controllable runners found for SGribanov/RunnerMonitor\n" {
 		t.Fatalf("RunRepoLifecycle = %q", got)
 	}
 }
