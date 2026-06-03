@@ -1,6 +1,9 @@
 package app
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestParseRunnerConfigWithBOM(t *testing.T) {
 	config, err := parseRunnerConfig([]byte("\uFEFF{\"agentName\":\"runner-1\",\"gitHubUrl\":\"https://github.com/SGribanov/RunnerMonitor\",\"workFolder\":\"_work\"}"))
@@ -30,6 +33,16 @@ func TestUniqueRepos(t *testing.T) {
 	repos := uniqueRepos([]Runner{{Repo: "b/repo"}, {Repo: "a/repo"}, {Repo: "b/repo"}, {}})
 	if len(repos) != 2 || repos[0] != "a/repo" || repos[1] != "b/repo" {
 		t.Fatalf("unexpected repos: %#v", repos)
+	}
+}
+
+func TestLoadingModelShowsWaitMessageBeforeTable(t *testing.T) {
+	view := NewLoadingModel().View()
+	if !strings.Contains(view, "Ожидайте, идет опрос раннеров...") {
+		t.Fatalf("loading view does not contain wait message: %q", view)
+	}
+	if strings.Contains(view, "Commands:") || strings.Contains(view, "No runners discovered") {
+		t.Fatalf("loading view should not show table or commands: %q", view)
 	}
 }
 

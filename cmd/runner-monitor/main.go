@@ -22,9 +22,15 @@ func main() {
 	disableAutostart := flag.Bool("disable-autostart", false, "disable boot autostart for service-managed runners without stopping them")
 	flag.Parse()
 
-	inventory, err := app.Refresh()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "initial refresh warning: %v\n", err)
+	needsInventory := *once || *audit || *disableAutostart || *startCurrent || *stopCurrent || *restartCurrent ||
+		*startRepo != "" || *stopRepo != "" || *restartRepo != ""
+	var inventory app.Inventory
+	if needsInventory {
+		var err error
+		inventory, err = app.Refresh()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "initial refresh warning: %v\n", err)
+		}
 	}
 	if *once {
 		fmt.Print(app.RenderInventory(inventory))
@@ -67,7 +73,7 @@ func main() {
 		return
 	}
 
-	program := tea.NewProgram(app.NewModel(inventory))
+	program := tea.NewProgram(app.NewLoadingModel())
 	if _, err := program.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "runner-monitor failed: %v\n", err)
 		os.Exit(1)

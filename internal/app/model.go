@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -11,10 +12,21 @@ import (
 )
 
 type Model struct {
-	input     textinput.Model
-	inventory Inventory
-	message   string
+	input        textinput.Model
+	inventory    Inventory
+	message      string
+	loading      bool
+	spinnerFrame int
 }
+
+type refreshResultMsg struct {
+	inventory Inventory
+	err       error
+}
+
+type spinnerTickMsg time.Time
+
+var hourglassFrames = []string{"⌛", "⏳"}
 
 func NewModel(inventory Inventory) Model {
 	input := textinput.New()
@@ -30,17 +42,45 @@ func NewModel(inventory Inventory) Model {
 	}
 }
 
+func NewLoadingModel() Model {
+	model := NewModel(Inventory{})
+	model.loading = true
+	model.message = "Ожидайте, идет опрос раннеров..."
+	return model
+}
+
 func (m Model) Init() tea.Cmd {
+	if m.loading {
+		return tea.Batch(textinput.Blink, refreshInventoryCmd(), spinnerTickCmd())
+	}
 	return textinput.Blink
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case refreshResultMsg:
+		m.inventory = msg.inventory
+		m.loading = false
+		if msg.err != nil {
+			m.message = fmt.Sprintf("refresh completed with warnings: %v", msg.err)
+		} else {
+			m.message = "ready"
+		}
+		return m, nil
+	case spinnerTickMsg:
+		if !m.loading {
+			return m, nil
+		}
+		m.spinnerFrame = (m.spinnerFrame + 1) % len(hourglassFrames)
+		return m, spinnerTickCmd()
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc:
 			return m, tea.Quit
 		case tea.KeyEnter:
+			if m.loading {
+				return m, nil
+			}
 			command := strings.TrimSpace(m.input.Value())
 			m.input.SetValue("")
 			return m.runCommand(command)
@@ -57,6 +97,12 @@ func (m Model) View() string {
 	title := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("39")).Render("RunnerMonitor")
 	b.WriteString(title)
 	b.WriteString("\n")
+	if m.loading {
+		frame := hourglassFrames[m.spinnerFrame%len(hourglassFrames)]
+		b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(frame + " Ожидайте, идет опрос раннеров..."))
+		b.WriteString("\n")
+		return b.String()
+	}
 	b.WriteString("Commands: refresh | start N | stop N | restart N | force-stop N | logs N | q\n\n")
 	b.WriteString(renderTable(m.inventory.Runners))
 	b.WriteString("\n")
@@ -78,14 +124,9 @@ func (m Model) runCommand(command string) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	}
 	if command == "refresh" {
-		inventory, err := Refresh()
-		m.inventory = inventory
-		if err != nil {
-			m.message = fmt.Sprintf("refresh completed with warnings: %v", err)
-		} else {
-			m.message = "refreshed"
-		}
-		return m, nil
+		m.loading = true
+		m.message = "Ожидайте, идет опрос раннеров..."
+		return m, tea.Batch(refreshInventoryCmd(), spinnerTickCmd())
 	}
 
 	parts := strings.Fields(command)
@@ -110,4 +151,17 @@ func (m Model) runCommand(command string) (tea.Model, tea.Cmd) {
 		m.message = "unknown command"
 	}
 	return m, nil
+}
+
+func refreshInventoryCmd() tea.Cmd {
+	return func() tea.Msg {
+		inventory, err := Refresh()
+		return refreshResultMsg{inventory: inventory, err: err}
+	}
+}
+
+func spinnerTickCmd() tea.Cmd {
+	return tea.Tick(140*time.Millisecond, func(t time.Time) tea.Msg {
+		return spinnerTickMsg(t)
+	})
 }

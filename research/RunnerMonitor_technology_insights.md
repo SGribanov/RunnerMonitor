@@ -107,3 +107,12 @@ static icon is embedded into Go's Windows build through
 was performed through `search_ai_mcp_default`; local validation confirmed the
 generator's `.syso` output is automatically linked by `go build` when placed in
 the package directory.
+
+## 2026-06-03 -- TUI startup loading state
+
+The first runner refresh can take long enough that a blank terminal feels like a
+hang. Interactive TUI startup now begins immediately with a loading model that
+animates `⌛`/`⏳` and shows `Ожидайте, идет опрос раннеров...` while `Refresh()`
+runs as a Bubble Tea command. CLI modes such as `--once`, `--audit`, and
+project lifecycle commands still refresh synchronously and do not print spinner
+frames, preserving machine-friendly output.
