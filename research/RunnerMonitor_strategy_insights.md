@@ -53,6 +53,14 @@ registration id `21` was deleted from `SGribanov/DeltaG`; local folder
 `C:\Runners-backup\actions-runner-win-x64-legion-windows-x64-2026-06-03.zip`
 and removed. Post-removal audit no longer lists that runner.
 
+## 2026-06-03 -- Third approved removal
+
+`newgenosengine-windows-local` was explicitly approved for deletion and removed
+from `C:\actions-runner-newgenosengine` after backup
+`C:\Runners-backup\actions-runner-newgenosengine-windows-local-2026-06-03.zip`.
+GitHub API already showed zero active runners for `SGribanov/NewGenOsEngine`.
+Post-removal audit no longer lists that runner.
+
 ## 2026-06-03 -- Manual startup policy
 
 Runners should not auto-start at boot. The desired workflow is for Codex or the

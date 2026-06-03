@@ -19,6 +19,7 @@ must not be executed without explicit approval.
 |---|---|---|---|
 | `SGribanov/DeltaG` | `legion-ubuntu-wsl-x64` | `/home/gsv777/actions-runner-linux-x64` | `/home/gsv777/runner-backups/actions-runner-linux-x64-legion-ubuntu-wsl-x64-2026-06-03.tar.gz` |
 | `SGribanov/DeltaG` | `legion-windows-x64` | `C:\actions-runner-win-x64` | `C:\Runners-backup\actions-runner-win-x64-legion-windows-x64-2026-06-03.zip` |
+| `SGribanov/NewGenOsEngine` | `newgenosengine-windows-local` | `C:\actions-runner-newgenosengine` | `C:\Runners-backup\actions-runner-newgenosengine-windows-local-2026-06-03.zip` |
 
 ## Keep
 
@@ -57,17 +58,6 @@ Get-Service | Where-Object { $_.Name -like 'actions.runner.*AU*' -or $_.Name -li
 Remove-Item -LiteralPath C:\actions-runner -Recurse -Force
 ```
 
-### `SGribanov/NewGenOsEngine` -- `newgenosengine-windows-local`
-
-Path: `C:\actions-runner-newgenosengine`
-
-```powershell
-New-Item -ItemType Directory -Force -Path C:\Runners-backup | Out-Null
-Compress-Archive -LiteralPath C:\actions-runner-newgenosengine -DestinationPath C:\Runners-backup\actions-runner-newgenosengine-windows-local.zip -Force
-Get-Service | Where-Object { $_.Name -like '*NewGenOsEngine*' -or $_.Name -like '*newgenosengine-windows-local*' }
-Remove-Item -LiteralPath C:\actions-runner-newgenosengine -Recurse -Force
-```
-
 ### `SGribanov/MyCloneOsEngine` -- `mycloneosengine-linux`
 
 Path: `/home/gsv777/myclone-runner-linux`
@@ -97,6 +87,5 @@ wsl.exe sh -lc 'rm -rf /home/gsv777/newgen-runner'
 Deletion requires explicit approval naming each runner:
 
 - `SGribanov/AU windows-local C:\actions-runner`
-- `SGribanov/NewGenOsEngine newgenosengine-windows-local C:\actions-runner-newgenosengine`
 - `SGribanov/MyCloneOsEngine mycloneosengine-linux /home/gsv777/myclone-runner-linux`
 - `SGribanov/NewGenOsEngine newgen-wsl-linux /home/gsv777/newgen-runner`

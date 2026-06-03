@@ -12,10 +12,12 @@
 - Removed approved runner `legion-windows-x64` at `C:\actions-runner-win-x64`.
 - Deleted GitHub runner registration id `21` from `SGribanov/DeltaG`.
 - Created backup `C:\Runners-backup\actions-runner-win-x64-legion-windows-x64-2026-06-03.zip`.
+- Removed approved runner `newgenosengine-windows-local` at `C:\actions-runner-newgenosengine`.
+- Created backup `C:\Runners-backup\actions-runner-newgenosengine-windows-local-2026-06-03.zip`.
 
 ## Current audit snapshot
 
-- Candidate remove: `windows-local`, `newgenosengine-windows-local`, `mycloneosengine-linux`, `newgen-wsl-linux`.
+- Candidate remove: `windows-local`, `mycloneosengine-linux`, `newgen-wsl-linux`.
 - Investigate: `backtester-runner`, DeltaG runners with queued jobs, `mycloneosengine-windows-local`.
 - Keep: `ideabox-runner`.
 
