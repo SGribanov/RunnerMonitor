@@ -35,7 +35,7 @@ Future dedicated Linux host:
 | `SGribanov/BackTester` | `backtester-runner` | `C:\actions-runner-backtester` | `C:\Runners\SGribanov-BackTester\backtester-runner` | manual Windows | done |
 | `SGribanov/DeltaG` | `deltag-win` | `C:\github-runners\deltag` | `C:\Runners\SGribanov-DeltaG\deltag-win` | Windows service | no, currently busy |
 | `SGribanov/IdeaBox` | `ideabox-runner` | `C:\actions-runner-ideabox` | `C:\Runners\SGribanov-IdeaBox\ideabox-runner` | Windows service | yes, if idle/admin available |
-| `SGribanov/MyCloneOsEngine` | `mycloneosengine-windows-local` | `C:\actions-runner-mycloneosengine` | `C:\Runners\SGribanov-MyCloneOsEngine\mycloneosengine-windows-local` | manual Windows | yes, if idle |
+| `SGribanov/MyCloneOsEngine` | `mycloneosengine-windows-local` | `C:\actions-runner-mycloneosengine` | `C:\Runners\SGribanov-MyCloneOsEngine\mycloneosengine-windows-local` | manual Windows | done |
 | `SGribanov/DeltaG` | `deltag-linux-wsl` | `/home/gsv777/actions-runner-deltag` | `/home/gsv777/Runners/SGribanov-DeltaG/deltag-linux-wsl` | WSL systemd | no, currently busy |
 | `SGribanov/MyCloneOsEngine` | `mycloneosengine-linux` | `/home/gsv777/myclone-runner-linux` | `/home/gsv777/Runners/SGribanov-MyCloneOsEngine/mycloneosengine-linux` | WSL systemd | yes, if idle/sudo available |
 

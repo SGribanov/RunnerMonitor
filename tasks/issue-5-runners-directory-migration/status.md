@@ -21,15 +21,29 @@
   - GitHub reports `backtester-runner` online and `busy=false`;
   - `runner-monitor --audit` shows BackTester as `keep`;
   - from `C:\Repos\BackTester`, `--start-current` returns `backtester-runner already running`.
+- Migrated `SGribanov/MyCloneOsEngine mycloneosengine-windows-local` from
+  `C:\actions-runner-mycloneosengine` to
+  `C:\Runners\SGribanov-MyCloneOsEngine\mycloneosengine-windows-local`.
+- Created backup:
+  `C:\Runners-backup\actions-runner-mycloneosengine-mycloneosengine-windows-local-2026-06-03.zip`.
+- Fixed post-move runner junctions:
+  - `bin` -> `C:\Runners\SGribanov-MyCloneOsEngine\mycloneosengine-windows-local\bin.2.334.0`
+  - `externals` -> `C:\Runners\SGribanov-MyCloneOsEngine\mycloneosengine-windows-local\externals.2.334.0`
+- Validation passed:
+  - one `Runner.Listener.exe` process remains;
+  - process path is under `C:\Runners\SGribanov-MyCloneOsEngine\mycloneosengine-windows-local`;
+  - GitHub reports `mycloneosengine-windows-local` online and `busy=false`;
+  - `runner-monitor --audit` shows MyClone Windows as `keep`;
+  - from `C:\Repos\MyCloneOsEngine`, `--start-current` returns both MyClone
+    runners already running.
 - Candidate first moves, after explicit approval:
-  - `SGribanov/MyCloneOsEngine mycloneosengine-windows-local`
   - `SGribanov/MyCloneOsEngine mycloneosengine-linux`
   - `SGribanov/IdeaBox ideabox-runner` if admin rights are available
 
 ## Next
 
 - Continue with the next non-busy runner, preferably
-  `SGribanov/MyCloneOsEngine mycloneosengine-windows-local`.
+  `SGribanov/MyCloneOsEngine mycloneosengine-linux`.
 - Include junction retargeting after every Windows runner folder move.
 
 ## Blockers

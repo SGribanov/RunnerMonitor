@@ -167,3 +167,16 @@ junctions still targeting `C:\actions-runner-backtester\bin.2.334.0` and
 to the versioned folders under the new root fixed startup; GitHub then reported
 the runner online and `--start-current` from `C:\Repos\BackTester` returned
 `backtester-runner already running`.
+
+## 2026-06-03 -- MyClone Windows runner move
+
+`SGribanov/MyCloneOsEngine mycloneosengine-windows-local` was moved from
+`C:\actions-runner-mycloneosengine` to
+`C:\Runners\SGribanov-MyCloneOsEngine\mycloneosengine-windows-local` after
+backup
+`C:\Runners-backup\actions-runner-mycloneosengine-mycloneosengine-windows-local-2026-06-03.zip`.
+As with BackTester, `bin` and `externals` were junctions targeting the old root.
+They were retargeted to `bin.2.334.0` and `externals.2.334.0` under the new
+root before starting the runner. GitHub reported the runner online/busy=false,
+and `--start-current` from `C:\Repos\MyCloneOsEngine` returned both MyClone
+runners already running.
