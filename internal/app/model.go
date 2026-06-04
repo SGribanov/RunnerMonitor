@@ -17,6 +17,7 @@ type Model struct {
 	table         table.Model
 	inventory     Inventory
 	message       string
+	updateNotice  string
 	loading       bool
 	refreshing    bool
 	refreshEvery  time.Duration
@@ -54,6 +55,10 @@ type clearResultMsg struct {
 	message string
 }
 
+type updateCheckDoneMsg struct {
+	notice string
+}
+
 var hourglassFrames = []string{"⌛", "⏳"}
 
 func NewModel(inventory Inventory) Model {
@@ -86,9 +91,9 @@ func NewLoadingModel() Model {
 
 func (m Model) Init() tea.Cmd {
 	if m.loading {
-		return tea.Batch(textinput.Blink, refreshInventoryCmd(refreshStartup), spinnerTickCmd(), m.autoRefreshTickCmd())
+		return tea.Batch(textinput.Blink, refreshInventoryCmd(refreshStartup), updateCheckCmd(), spinnerTickCmd(), m.autoRefreshTickCmd())
 	}
-	return tea.Batch(textinput.Blink, m.autoRefreshTickCmd())
+	return tea.Batch(textinput.Blink, updateCheckCmd(), m.autoRefreshTickCmd())
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -139,6 +144,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case clearResultMsg:
 		m.message = msg.message
 		return m, nil
+	case updateCheckDoneMsg:
+		m.updateNotice = msg.notice
+		m.syncTable()
+		return m, nil
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc:
@@ -183,6 +192,10 @@ func (m Model) View() string {
 		return b.String()
 	}
 	if m.height <= 8 {
+		if m.updateNotice != "" {
+			b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(trunc(m.updateNotice, max(20, m.width))))
+			b.WriteString("\n")
+		}
 		if m.message != "" {
 			b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(trunc(m.message, max(20, m.width))))
 			b.WriteString("\n")
@@ -198,6 +211,10 @@ func (m Model) View() string {
 			b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(trunc(m.message, max(20, m.width))))
 			b.WriteString("\n")
 		}
+		if m.updateNotice != "" {
+			b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(trunc(m.updateNotice, max(20, m.width))))
+			b.WriteString("\n")
+		}
 		b.WriteString(m.input.View())
 		b.WriteString("\n")
 		return b.String()
@@ -208,6 +225,10 @@ func (m Model) View() string {
 	b.WriteString("\n")
 	if m.message != "" {
 		b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(trunc(m.message, max(20, m.width))))
+		b.WriteString("\n")
+	}
+	if m.updateNotice != "" {
+		b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(trunc(m.updateNotice, max(20, m.width))))
 		b.WriteString("\n")
 	}
 	b.WriteString(m.input.View())
@@ -223,14 +244,18 @@ func (m *Model) resize(width, height int) {
 }
 
 func (m *Model) syncTable() {
+	height := tableHeight(m.height)
+	if m.updateNotice != "" {
+		height = max(1, height-1)
+	}
 	if len(m.table.Columns()) == 0 {
-		m.table = newRunnerTable(m.inventory.Runners, m.width, tableHeight(m.height))
+		m.table = newRunnerTable(m.inventory.Runners, m.width, height)
 		return
 	}
 	m.table.SetColumns(runnerTableColumns(m.width))
 	m.table.SetRows(runnerTableRows(m.inventory.Runners))
 	m.table.SetWidth(m.width)
-	m.table.SetHeight(tableHeight(m.height))
+	m.table.SetHeight(height)
 }
 
 func (m Model) runCommand(command string) (tea.Model, tea.Cmd) {
@@ -400,6 +425,12 @@ func refreshInventoryCmd(source refreshSource) tea.Cmd {
 	return func() tea.Msg {
 		inventory, err := Refresh()
 		return refreshResultMsg{inventory: inventory, err: err, source: source, completedAt: time.Now()}
+	}
+}
+
+func updateCheckCmd() tea.Cmd {
+	return func() tea.Msg {
+		return updateCheckDoneMsg{notice: CheckForUpdate(CurrentVersion)}
 	}
 }
 

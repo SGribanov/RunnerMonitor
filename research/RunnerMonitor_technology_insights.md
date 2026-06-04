@@ -49,6 +49,16 @@ admin console tries to render a full table and pushes the status/input area to
 the only visible lines. For heights of 8 rows or less, a compact view that shows
 title, status, and input is preferable to a broken table.
 
+## 2026-06-04 -- Startup update check
+
+The TUI can check for a newer RunnerMonitor release once at startup without
+blocking runner monitoring. Reusing `gh release view --repo SGribanov/RunnerMonitor
+--json tagName,url` avoids adding a new SDK or HTTP client dependency and stays
+consistent with the existing GitHub CLI requirement. The check should use a
+short timeout and treat offline, unauthenticated, or failed release lookups as
+silent no-ops. A newer version should render as a separate notice line rather
+than replacing the normal runner status message.
+
 ## 2026-06-03 -- Already-running services
 
 Starting an already running Windows service or active WSL unit can still require
