@@ -4,6 +4,11 @@
       "repo": "SGribanov/AU",
       "runner": "windows-local",
       "reason": "AU project will continue; keep this runner for future work."
+    },
+    {
+      "repo": "SGribanov/BackTester",
+      "runner": "backtester-runner",
+      "reason": "BackTester runner is retained for project work; manual/offline state is acceptable because RunnerMonitor can start it on demand."
     }
   ]
 }

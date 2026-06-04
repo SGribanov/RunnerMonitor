@@ -5,7 +5,8 @@
 
 - Created issue #2.
 - Added read-only `--audit` command.
-- Current audit reports candidate removals for local-only or GitHub-unknown manual/inactive runners.
+- Current audit reports `keep`, `investigate`, and `candidate-remove`
+  decisions for discovered runners.
 - Added `reports/runner-audit-2026-06-03.md` with read-only cleanup proposal and exact commands.
 - Removed approved runner `legion-ubuntu-wsl-x64` at `/home/gsv777/actions-runner-linux-x64`.
 - Created backup `/home/gsv777/runner-backups/actions-runner-linux-x64-legion-ubuntu-wsl-x64-2026-06-03.tar.gz`.
@@ -19,6 +20,10 @@
 - WSL systemd unit cleanup was completed manually; `actions.runner.SGribanov-NewGenOsEngine.newgen-wsl-linux.service` is no longer present.
 - Marked `AU/windows-local` as keep via `runner-policy.json`.
 - Reattached `mycloneosengine-linux`; it is now service-managed, active, and GitHub online.
+- Marked `BackTester/backtester-runner` as keep via `runner-policy.json`
+  because it is retained for BackTester work and can be started on demand by
+  RunnerMonitor even when currently manual/offline.
+- Final audit has no `candidate-remove` runners.
 
 ## Current audit snapshot
 
@@ -39,8 +44,9 @@
 
 ## Next
 
-- Teach audit to ignore or separately flag closed-PR/no-job stale runs, because the GitHub cancel API cannot cancel this one.
+- None for issue #2. The DeltaG stale queue behavior remains a known GitHub
+  queue anomaly, but it no longer blocks runner cleanup audit closure.
 
 ## Blockers
 
-- Destructive cleanup requires explicit approval.
+- None.

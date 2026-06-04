@@ -52,6 +52,13 @@ working context. The documentation should emphasize purpose, current stack,
 quick start, command reference, remote-runner topology, and safety gates around
 cleanup/removal/reprovisioning.
 
+## 2026-06-04 -- BackTester runner keep decision
+
+`SGribanov/BackTester backtester-runner` should be retained even when it is
+manual/offline during idle periods. It was migrated into the common
+`C:\Runners` layout and RunnerMonitor can start it on demand for BackTester
+work, so audit policy marks it `keep` instead of `candidate-remove`.
+
 ## 2026-06-03 -- First cleanup candidates
 
 The first audit identifies four candidate removals: AU `windows-local`, NewGen
