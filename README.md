@@ -206,7 +206,8 @@ help is closed, `Esc` exits the TUI.
 
 The table is resize-aware. On narrow terminals, low-priority columns are hidden
 before the main project, runner, status, busy, and queue columns are allowed to
-drift. In the TUI table, `Busy=true` is highlighted; `false` remains plain.
+drift. In the TUI table, the `Busy` column uses plain `true`/`false` text so
+status columns stay aligned and readable.
 
 ## CLI Command Reference
 

@@ -210,10 +210,10 @@ func TestRunnerTableRowsIncludeProjectAndQueue(t *testing.T) {
 	}
 }
 
-func TestBusyTextColorsOnlyTrue(t *testing.T) {
+func TestBusyTextIsPlainTableCellText(t *testing.T) {
 	busy := busyText(true)
-	if !strings.Contains(busy, "true") {
-		t.Fatalf("busy true should keep true text, got %q", busy)
+	if busy != "true" {
+		t.Fatalf("busy true should stay plain table text, got %q", busy)
 	}
 	if idle := busyText(false); idle != "false" {
 		t.Fatalf("busy false should stay plain, got %q", idle)
