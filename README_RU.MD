@@ -22,6 +22,8 @@ workflow, принадлежность к проекту и безопасные
   таблицу на время refresh.
 - Один раз при запуске TUI проверяет GitHub Releases и показывает короткое
   уведомление, если доступна новая версия.
+- Ограничивает повторные GitHub status-запросы во время автообновления TUI,
+  чтобы снизить нагрузку на процессы и API.
 - Позволяет запускать, останавливать, перезапускать, чистить, удалять и
   перенастраивать runner'ы.
 - Защищает опасные операции dry-run режимом, проверкой busy-состояния и
@@ -61,7 +63,7 @@ workflow, принадлежность к проекту и безопасные
 [GitHub Releases](https://github.com/SGribanov/RunnerMonitor/releases/latest):
 
 ```text
-RunnerMonitor-v0.2.1-windows-x64.zip
+RunnerMonitor-v0.3.0-windows-x64.zip
 ```
 
 Распакуйте ZIP и запустите TUI:
@@ -169,6 +171,9 @@ $env:RUNNER_MONITOR_CONFIG = "D:\Temp\runner-monitor.json"
 Другой интервал можно задать через `tuiRefreshIntervalSeconds` в
 `runner-monitor.json`. Команда `refresh` запускает немедленное обновление; если
 данные уже есть, таблица остается видимой до прихода новой информации.
+Автообновление кратко переиспользует свежий GitHub status, чтобы не запускать
+`gh` для каждого репозитория каждые 5 секунд; ручной `refresh` все равно
+запрашивает свежий GitHub status.
 
 При запуске TUI один раз делает best-effort проверку GitHub Releases через
 `gh`. Если интернета нет или проверка не удалась, RunnerMonitor запускается
@@ -354,10 +359,15 @@ C:\Runners\<owner>-<repo>\<runner-name>
 - Удаление и reprovisioning по умолчанию dry-run.
 - Удаление папки требует `--delete-folder` и разрешено только внутри
   настроенных safe runner roots.
+- Удаление папки отвергает сами configured root-каталоги и нормализованный path
+  traversal.
 - Cleanup удаляет безопасные generated файлы вроде содержимого `_work` и
   installer archives, но сохраняет регистрацию и бинарники runner'а.
 - `--show-config` никогда не печатает реальный WSL sudo password.
 - Локальные config-файлы и секреты нельзя коммитить.
+- GitHub registration/remove token редактируется из ошибок команд; передача
+  token убрана из parent process arguments там, где это позволяют runner config
+  scripts.
 
 ## Сборка и тесты
 

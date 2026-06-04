@@ -59,6 +59,19 @@ short timeout and treat offline, unauthenticated, or failed release lookups as
 silent no-ops. A newer version should render as a separate notice line rather
 than replacing the normal runner status message.
 
+## 2026-06-04 -- Review hardening follow-up
+
+Security review found that destructive WSL/Linux folder deletion must normalize
+slash paths with `path.Clean` before configured-root checks. String prefix
+checks alone can accept traversal such as `/runnerbox/Runners/../danger`.
+Runner root folders themselves should not be deletable; only children under
+configured roots are valid targets. Runner registration/remove tokens should be
+redacted from command errors and kept out of parent process argument lists where
+the upstream `config.cmd`/`config.sh` calling convention allows it. TUI
+auto-refresh should avoid repeated `gh` process fan-out every few seconds by
+briefly caching GitHub status for automatic refreshes while keeping manual
+refresh fresh.
+
 ## 2026-06-03 -- Already-running services
 
 Starting an already running Windows service or active WSL unit can still require

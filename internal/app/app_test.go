@@ -650,6 +650,75 @@ func TestSafeRunnerRootUsesConfiguredRoots(t *testing.T) {
 	if !isSafeRunnerRoot(Runner{Transport: "wsl", Path: "/runnerbox/Runners/SGribanov-RunnerMonitor/runner-1"}) {
 		t.Fatalf("configured WSL runner root should be safe")
 	}
+	if isSafeRunnerRoot(Runner{Transport: "wsl", Path: "/runnerbox/Runners/../danger"}) {
+		t.Fatalf("WSL path traversal should not be safe")
+	}
+	if isSafeRunnerRoot(Runner{Transport: "wsl", Path: "/runnerbox/Runners"}) {
+		t.Fatalf("configured WSL root itself should not be deletable")
+	}
+	if isSafeRunnerRoot(Runner{Path: `D:\BuildAgents`}) {
+		t.Fatalf("configured Windows root itself should not be deletable")
+	}
+	if isSafeRunnerRoot(Runner{Path: `D:\BuildAgents\..\danger`}) {
+		t.Fatalf("Windows path traversal should not be safe")
+	}
+}
+
+func TestConfigPowerShellScriptWithTokenUsesEnvironmentReference(t *testing.T) {
+	got := configPowerShellScriptWithToken(`C:\Runners\runner 1\config.cmd`, []string{"remove", "--unattended", "--token", "secret-token"})
+	if strings.Contains(got, "secret-token") {
+		t.Fatalf("PowerShell script should not contain raw token: %q", got)
+	}
+	if !strings.Contains(got, "$env:RUNNER_MONITOR_RUNNER_TOKEN") {
+		t.Fatalf("PowerShell script should use token env reference: %q", got)
+	}
+}
+
+func TestConfigShellLineWithTokenUsesEnvironmentReference(t *testing.T) {
+	got := configShellLineWithToken(`/opt/Runner Monitor/config.sh`, []string{"remove", "--unattended", "--token", "secret-token"})
+	if strings.Contains(got, "secret-token") {
+		t.Fatalf("shell line should not contain raw token: %q", got)
+	}
+	if !strings.Contains(got, "$RUNNER_MONITOR_RUNNER_TOKEN") {
+		t.Fatalf("shell line should use token env reference: %q", got)
+	}
+}
+
+func TestMaskSecretRedactsToken(t *testing.T) {
+	got := maskSecret("config failed with secret-token", "secret-token")
+	if strings.Contains(got, "secret-token") || !strings.Contains(got, "<redacted>") {
+		t.Fatalf("maskSecret did not redact token: %q", got)
+	}
+}
+
+func TestAppendWSLEnvPreservesExistingEntries(t *testing.T) {
+	got := appendWSLEnv("PATH/l:OTHER", "RUNNER_MONITOR_RUNNER_TOKEN")
+	if got != "PATH/l:OTHER:RUNNER_MONITOR_RUNNER_TOKEN" {
+		t.Fatalf("appendWSLEnv = %q", got)
+	}
+	if duplicated := appendWSLEnv(got, "RUNNER_MONITOR_RUNNER_TOKEN"); duplicated != got {
+		t.Fatalf("appendWSLEnv duplicated entry: %q", duplicated)
+	}
+}
+
+func TestRefreshWithGitHubCacheUsesCachedGitHubStatus(t *testing.T) {
+	calls := 0
+	loader := func(repos []string) (map[string]GitHubRunnerStatus, map[string]QueueStatus, error) {
+		calls++
+		return map[string]GitHubRunnerStatus{
+			runnerKey("SGribanov/RunnerMonitor", "runner-1"): {Status: "online", Busy: true},
+		}, map[string]QueueStatus{"SGribanov/RunnerMonitor": {Count: 1}}, nil
+	}
+	inventory, err := refreshWithGitHubStatus(loader)
+	if err != nil {
+		t.Fatalf("refreshWithGitHubStatus returned error: %v", err)
+	}
+	if calls != 1 {
+		t.Fatalf("loader calls = %d", calls)
+	}
+	if len(inventory.Runners) > 0 {
+		t.Skip("local runner inventory is environment-dependent")
+	}
 }
 
 func TestAuditRunnerCandidateRemove(t *testing.T) {
@@ -725,10 +794,19 @@ func TestRunnerDirFromProcessPath(t *testing.T) {
 }
 
 func TestRemoteWindowsTUICommand(t *testing.T) {
-	host := RemoteHost{SSHHost: "runnerbox", OS: "windows", RunnerMonitorPath: "C:/Repos/RunnerMonitor/runner-monitor.ps1"}
+	host := RemoteHost{SSHHost: "runnerbox", OS: "windows", RunnerMonitorPath: "C:/Repos/Runner Monitor/runner-monitor.ps1"}
 	args := remoteTUISSHArgs(host)
-	wantCommand := "powershell -NoProfile -ExecutionPolicy Bypass -File C:/Repos/RunnerMonitor/runner-monitor.ps1"
+	wantCommand := "powershell -NoProfile -ExecutionPolicy Bypass -File 'C:/Repos/Runner Monitor/runner-monitor.ps1'"
 	if len(args) != 3 || args[0] != "-t" || args[1] != "runnerbox" || args[2] != wantCommand {
+		t.Fatalf("remoteTUISSHArgs = %#v", args)
+	}
+}
+
+func TestRemoteLinuxTUICommandQuotesPath(t *testing.T) {
+	host := RemoteHost{SSHHost: "runnerbox", OS: "linux", RunnerMonitorPath: "/opt/Runner Monitor/runner-monitor"}
+	args := remoteTUISSHArgs(host)
+	wantCommand := "'/opt/Runner Monitor/runner-monitor'"
+	if len(args) != 3 || args[2] != wantCommand {
 		t.Fatalf("remoteTUISSHArgs = %#v", args)
 	}
 }

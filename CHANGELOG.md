@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.3.0] - 2026-06-04
+
+### Added
+
+- Automatic TUI refresh briefly reuses recent GitHub status to avoid repeated
+  `gh` process fan-out while preserving fresh manual refresh behavior.
+
+### Changed
+
+- Runner registration and removal token handling now uses environment-based
+  references where the upstream runner config scripts allow it.
+- Remote TUI SSH commands quote configured paths for Windows and Linux hosts.
+- Runner sorting precomputes comparison keys during refresh.
+
+### Fixed
+
+- Runner folder deletion now rejects configured root folders themselves and
+  normalized Windows/WSL path traversal outside configured safe roots.
+- Runner config command errors redact registration/remove tokens before
+  surfacing failures.
+
 ## [0.2.1] - 2026-06-04
 
 ### Added
@@ -50,6 +71,7 @@
 - Release ZIP includes only a sanitized default config with an empty
   `wslSudoPassword`.
 
+[0.3.0]: https://github.com/SGribanov/RunnerMonitor/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/SGribanov/RunnerMonitor/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/SGribanov/RunnerMonitor/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/SGribanov/RunnerMonitor/releases/tag/v0.1.0

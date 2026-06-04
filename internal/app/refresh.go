@@ -2,12 +2,24 @@ package app
 
 import (
 	"errors"
-	"fmt"
 	"sort"
 	"strings"
+	"time"
 )
 
+const autoRefreshGitHubCacheTTL = 30 * time.Second
+
 func Refresh() (Inventory, error) {
+	return refreshWithGitHubStatus(LoadGitHubStatus)
+}
+
+func RefreshWithGitHubCache(maxAge time.Duration) (Inventory, error) {
+	return refreshWithGitHubStatus(func(repos []string) (map[string]GitHubRunnerStatus, map[string]QueueStatus, error) {
+		return LoadGitHubStatusCached(repos, maxAge)
+	})
+}
+
+func refreshWithGitHubStatus(loadGitHubStatus func([]string) (map[string]GitHubRunnerStatus, map[string]QueueStatus, error)) (Inventory, error) {
 	var warnings []error
 	var runners []Runner
 
@@ -17,7 +29,7 @@ func Refresh() (Inventory, error) {
 	}
 	runners = append(runners, local...)
 
-	statuses, queues, err := LoadGitHubStatus(uniqueRepos(runners))
+	statuses, queues, err := loadGitHubStatus(uniqueRepos(runners))
 	if err != nil {
 		warnings = append(warnings, err)
 	}
@@ -41,13 +53,31 @@ func Refresh() (Inventory, error) {
 		}
 	}
 
-	sort.SliceStable(runners, func(i, j int) bool {
-		left := strings.ToLower(fmt.Sprintf("%s/%s/%s", runners[i].Host, runners[i].Repo, runners[i].Name))
-		right := strings.ToLower(fmt.Sprintf("%s/%s/%s", runners[j].Host, runners[j].Repo, runners[j].Name))
-		return left < right
-	})
+	sortRunners(runners)
 
 	return Inventory{Runners: runners}, errors.Join(warnings...)
+}
+
+func sortRunners(runners []Runner) {
+	sortable := make([]struct {
+		runner Runner
+		key    string
+	}, len(runners))
+	for i, runner := range runners {
+		sortable[i] = struct {
+			runner Runner
+			key    string
+		}{
+			runner: runner,
+			key:    strings.ToLower(runner.Host + "/" + runner.Repo + "/" + runner.Name),
+		}
+	}
+	sort.SliceStable(sortable, func(i, j int) bool {
+		return sortable[i].key < sortable[j].key
+	})
+	for i, item := range sortable {
+		runners[i] = item.runner
+	}
 }
 
 func uniqueRepos(runners []Runner) []string {

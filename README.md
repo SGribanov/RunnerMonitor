@@ -21,6 +21,8 @@ information, repository ownership, and safe lifecycle commands.
   visible during refresh.
 - Checks GitHub Releases once on TUI startup and shows a concise update notice
   when a newer version is available.
+- Throttles repeated GitHub status lookups during TUI auto-refresh to reduce
+  process and API overhead.
 - Starts, stops, restarts, clears, removes, and reprovisions selected runners.
 - Keeps destructive operations guarded by dry-runs, busy-runner checks, and
   explicit confirmation.
@@ -60,7 +62,7 @@ Download the latest ready-to-run Windows package from
 [GitHub Releases](https://github.com/SGribanov/RunnerMonitor/releases/latest):
 
 ```text
-RunnerMonitor-v0.2.1-windows-x64.zip
+RunnerMonitor-v0.3.0-windows-x64.zip
 ```
 
 Extract the ZIP and start the TUI:
@@ -167,7 +169,10 @@ Inside the TUI:
 Runner information auto-refreshes every 5 seconds by default. Change
 `tuiRefreshIntervalSeconds` in `runner-monitor.json` to use a different
 interval. The `refresh` command starts an immediate refresh; when existing data
-is available, the table stays visible until the new data arrives.
+is available, the table stays visible until the new data arrives. Automatic
+refreshes reuse recent GitHub status briefly to avoid shelling out to `gh` for
+every repository every 5 seconds; manual `refresh` still fetches fresh GitHub
+state.
 
 On startup, the TUI performs one best-effort GitHub Releases check through
 `gh`. If the internet is unavailable or the check fails, RunnerMonitor starts
@@ -354,10 +359,15 @@ runner-by-runner. Do not move or delete busy runners without explicit approval.
 - Removal and reprovisioning are dry-run by default.
 - Folder deletion requires `--delete-folder` and is limited to configured safe
   runner roots.
+- Folder deletion rejects configured root folders themselves and normalized
+  path traversal.
 - Cleanup removes safe generated content such as `_work` contents and runner
   installer archives, while preserving runner registration and binaries.
 - `--show-config` never prints the real WSL sudo password.
 - Local app config files and secrets must not be committed.
+- GitHub runner registration/remove token output is redacted from command
+  errors; token passing is kept out of parent process arguments where the runner
+  config scripts allow it.
 
 ## Build And Test
 

@@ -189,9 +189,9 @@ func remoteTUISSHArgs(host RemoteHost) []string {
 func remoteTUICommand(host RemoteHost) string {
 	switch strings.ToLower(host.OS) {
 	case "linux":
-		return host.RunnerMonitorPath
+		return shellQuote(host.RunnerMonitorPath)
 	default:
-		return fmt.Sprintf("powershell -NoProfile -ExecutionPolicy Bypass -File %s", host.RunnerMonitorPath)
+		return fmt.Sprintf("powershell -NoProfile -ExecutionPolicy Bypass -File %s", powerShellQuote(host.RunnerMonitorPath))
 	}
 }
 
