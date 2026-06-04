@@ -173,6 +173,15 @@ func (m Model) View() string {
 		b.WriteString("\n")
 		return b.String()
 	}
+	if m.height <= 8 {
+		if m.message != "" {
+			b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(trunc(m.message, max(20, m.width))))
+			b.WriteString("\n")
+		}
+		b.WriteString(m.input.View())
+		b.WriteString("\n")
+		return b.String()
+	}
 	b.WriteString(commandHelp(m.width))
 	b.WriteString("\n\n")
 	b.WriteString(m.table.View())
@@ -188,7 +197,7 @@ func (m Model) View() string {
 
 func (m *Model) resize(width, height int) {
 	m.width = max(width, 60)
-	m.height = max(height, 12)
+	m.height = max(height, 1)
 	m.input.Width = max(20, m.width-2)
 	m.syncTable()
 }

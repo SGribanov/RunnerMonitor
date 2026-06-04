@@ -174,7 +174,7 @@ func main() {
 		return
 	}
 
-	program := tea.NewProgram(app.NewLoadingModel())
+	program := tea.NewProgram(app.NewLoadingModel(), tea.WithAltScreen())
 	if _, err := program.Run(); err != nil {
 		fmt.Fprintf(os.Stderr, "runner-monitor failed: %v\n", err)
 		os.Exit(1)

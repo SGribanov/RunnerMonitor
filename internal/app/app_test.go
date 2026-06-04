@@ -166,6 +166,25 @@ func TestModelWindowSizeMessageResizesTableAndInput(t *testing.T) {
 	}
 }
 
+func TestModelKeepsSmallWindowHeightCompact(t *testing.T) {
+	model := NewModel(Inventory{Runners: []Runner{{Name: "runner-1", Repo: "SGribanov/RunnerMonitor"}}})
+	updated, _ := model.Update(tea.WindowSizeMsg{Width: 50, Height: 5})
+	resized, ok := updated.(Model)
+	if !ok {
+		t.Fatalf("updated model has type %T", updated)
+	}
+	if resized.height != 5 {
+		t.Fatalf("height = %d", resized.height)
+	}
+	view := resized.View()
+	if strings.Contains(view, "Commands:") || strings.Contains(view, "runner-1") {
+		t.Fatalf("compact view should not render full table/help: %q", view)
+	}
+	if !strings.Contains(view, "ready") || !strings.Contains(view, "RunnerMonitor") {
+		t.Fatalf("compact view should keep status and title visible: %q", view)
+	}
+}
+
 func TestRunnerTableRowsIncludeProjectAndQueue(t *testing.T) {
 	rows := runnerTableRows([]Runner{{
 		Name:            "runner-1",
