@@ -1,12 +1,14 @@
 package app
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type windowsService struct {
@@ -21,6 +23,8 @@ type windowsRunnerProcess struct {
 	ExecutablePath string `json:"ExecutablePath"`
 	CommandLine    string `json:"CommandLine"`
 }
+
+var windowsDiscoveryTimeout = 5 * time.Second
 
 func discoverWindowsRunnerDirs(services map[string]windowsService, processes map[string]windowsRunnerProcess, roots []string) ([]Runner, error) {
 	files, err := findRunnerFiles(roots, 3)
@@ -55,7 +59,7 @@ func discoverWindowsRunnerDirs(services map[string]windowsService, processes map
 
 func discoverWindowsServices() (map[string]windowsService, error) {
 	script := `Get-CimInstance Win32_Service | Where-Object { $_.Name -like 'actions.runner.*' -or $_.DisplayName -like '*GitHub Actions Runner*' } | Select-Object Name,State,PathName | ConvertTo-Json -Depth 3`
-	out, err := exec.Command("powershell", "-NoProfile", "-Command", script).Output()
+	out, err := runWindowsDiscoveryPowerShell(script)
 	if err != nil {
 		return map[string]windowsService{}, err
 	}
@@ -88,7 +92,7 @@ func discoverWindowsServices() (map[string]windowsService, error) {
 
 func discoverWindowsRunnerProcesses() (map[string]windowsRunnerProcess, error) {
 	script := `Get-CimInstance Win32_Process | Where-Object { $_.Name -eq 'Runner.Listener.exe' -and $_.ExecutablePath } | Select-Object ProcessId,Name,ExecutablePath,CommandLine | ConvertTo-Json -Depth 3`
-	out, err := exec.Command("powershell", "-NoProfile", "-Command", script).Output()
+	out, err := runWindowsDiscoveryPowerShell(script)
 	if err != nil {
 		return map[string]windowsRunnerProcess{}, err
 	}
@@ -117,6 +121,17 @@ func discoverWindowsRunnerProcesses() (map[string]windowsRunnerProcess, error) {
 		byDir[strings.ToLower(dir)] = process
 	}
 	return byDir, nil
+}
+
+func runWindowsDiscoveryPowerShell(script string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), windowsDiscoveryTimeout)
+	defer cancel()
+
+	out, err := exec.CommandContext(ctx, "powershell", "-NoProfile", "-Command", script).Output()
+	if ctx.Err() == context.DeadlineExceeded {
+		return nil, fmt.Errorf("Windows runner discovery timed out after %s", windowsDiscoveryTimeout)
+	}
+	return out, err
 }
 
 func runnerDirFromServicePath(pathName string) string {
