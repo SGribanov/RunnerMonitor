@@ -97,7 +97,7 @@ func hideColumnsToFit(columns *[]table.Column, available int) {
 }
 
 func tableHeight(windowHeight int) int {
-	return max(5, windowHeight-8)
+	return max(1, windowHeight-8)
 }
 
 func commandHelp(width int) string {

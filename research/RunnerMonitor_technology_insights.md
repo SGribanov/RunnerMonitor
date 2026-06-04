@@ -38,6 +38,17 @@ non-elevated session cannot change those startup policies.
 arguments to it. This gives Codex a stable command path:
 `powershell -NoProfile -ExecutionPolicy Bypass -File C:\Repos\RunnerMonitor\runner-monitor.ps1 --start-current`.
 
+## 2026-06-04 -- Elevated Windows TUI rendering
+
+When RunnerMonitor is launched from an elevated Windows PowerShell window, the
+normal Bubble Tea terminal buffer can show only the bottom of the rendered
+frame. The interactive TUI should run with Bubble Tea alternate screen mode so
+the app owns the full viewport during redraws. The model should also keep the
+actual small terminal height instead of forcing it to 12 rows; otherwise a tiny
+admin console tries to render a full table and pushes the status/input area to
+the only visible lines. For heights of 8 rows or less, a compact view that shows
+title, status, and input is preferable to a broken table.
+
 ## 2026-06-03 -- Already-running services
 
 Starting an already running Windows service or active WSL unit can still require
