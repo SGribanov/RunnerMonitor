@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os/exec"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -43,6 +44,15 @@ type runsResponse struct {
 		CreatedAt time.Time `json:"created_at"`
 	} `json:"workflow_runs"`
 }
+
+var githubStatusCache = struct {
+	sync.Mutex
+	key      string
+	storedAt time.Time
+	statuses map[string]GitHubRunnerStatus
+	queues   map[string]QueueStatus
+	err      error
+}{}
 
 func LoadGitHubStatus(repos []string) (map[string]GitHubRunnerStatus, map[string]QueueStatus, error) {
 	statuses := map[string]GitHubRunnerStatus{}
@@ -99,6 +109,55 @@ func LoadGitHubStatus(repos []string) (map[string]GitHubRunnerStatus, map[string
 		return statuses, queues, errors.New(strings.Join(warnings, "; "))
 	}
 	return statuses, queues, nil
+}
+
+func LoadGitHubStatusCached(repos []string, maxAge time.Duration) (map[string]GitHubRunnerStatus, map[string]QueueStatus, error) {
+	if maxAge <= 0 {
+		return LoadGitHubStatus(repos)
+	}
+	key := strings.Join(repos, "\x00")
+	now := time.Now()
+
+	githubStatusCache.Lock()
+	if githubStatusCache.key == key && !githubStatusCache.storedAt.IsZero() && now.Sub(githubStatusCache.storedAt) <= maxAge {
+		statuses, queues, err := cloneGitHubStatusCacheLocked()
+		githubStatusCache.Unlock()
+		return statuses, queues, err
+	}
+	githubStatusCache.Unlock()
+
+	statuses, queues, err := LoadGitHubStatus(repos)
+
+	githubStatusCache.Lock()
+	githubStatusCache.key = key
+	githubStatusCache.storedAt = now
+	githubStatusCache.statuses = cloneStatuses(statuses)
+	githubStatusCache.queues = cloneQueues(queues)
+	githubStatusCache.err = err
+	cachedStatuses, cachedQueues, cachedErr := cloneGitHubStatusCacheLocked()
+	githubStatusCache.Unlock()
+	return cachedStatuses, cachedQueues, cachedErr
+}
+
+func cloneGitHubStatusCacheLocked() (map[string]GitHubRunnerStatus, map[string]QueueStatus, error) {
+	return cloneStatuses(githubStatusCache.statuses), cloneQueues(githubStatusCache.queues), githubStatusCache.err
+}
+
+func cloneStatuses(statuses map[string]GitHubRunnerStatus) map[string]GitHubRunnerStatus {
+	clone := make(map[string]GitHubRunnerStatus, len(statuses))
+	for key, status := range statuses {
+		status.Labels = append([]string(nil), status.Labels...)
+		clone[key] = status
+	}
+	return clone
+}
+
+func cloneQueues(queues map[string]QueueStatus) map[string]QueueStatus {
+	clone := make(map[string]QueueStatus, len(queues))
+	for key, queue := range queues {
+		clone[key] = queue
+	}
+	return clone
 }
 
 func ghAPI(endpoint string) ([]byte, error) {

@@ -423,7 +423,13 @@ func removeRunnerCmd(runner Runner, options RemoveRunnerOptions) tea.Cmd {
 
 func refreshInventoryCmd(source refreshSource) tea.Cmd {
 	return func() tea.Msg {
-		inventory, err := Refresh()
+		var inventory Inventory
+		var err error
+		if source == refreshAuto {
+			inventory, err = RefreshWithGitHubCache(autoRefreshGitHubCacheTTL)
+		} else {
+			inventory, err = Refresh()
+		}
 		return refreshResultMsg{inventory: inventory, err: err, source: source, completedAt: time.Now()}
 	}
 }

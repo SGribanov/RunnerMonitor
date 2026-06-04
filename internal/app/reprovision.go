@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -271,11 +272,11 @@ func unregisterRunner(runner Runner) error {
 	}
 	switch runner.Transport {
 	case "windows", "local":
-		return runLocalRunnerConfig(runner.Path, "remove", []string{"--unattended", "--token", token})
+		return runLocalRunnerConfig(runner.Path, "remove", []string{"--unattended"}, token)
 	case "wsl":
-		return runWSLRunnerConfig(runner.Path, "remove", []string{"--unattended", "--token", token})
+		return runWSLRunnerConfig(runner.Path, "remove", []string{"--unattended"}, token)
 	default:
-		return runLocalRunnerConfig(runner.Path, "remove", []string{"--unattended", "--token", token})
+		return runLocalRunnerConfig(runner.Path, "remove", []string{"--unattended"}, token)
 	}
 }
 
@@ -283,7 +284,6 @@ func configureRunner(repo string, token string, options AddRunnerOptions) error 
 	args := []string{
 		"--unattended",
 		"--url", "https://github.com/" + repo,
-		"--token", token,
 		"--name", options.Name,
 		"--work", "_work",
 	}
@@ -294,41 +294,58 @@ func configureRunner(repo string, token string, options AddRunnerOptions) error 
 		args = append(args, "--replace")
 	}
 	if isWSLPath(options.RunnerFolder) {
-		return runWSLRunnerConfig(options.RunnerFolder, "configure", args)
+		return runWSLRunnerConfig(options.RunnerFolder, "configure", args, token)
 	}
-	return runLocalRunnerConfig(options.RunnerFolder, "configure", args)
+	return runLocalRunnerConfig(options.RunnerFolder, "configure", args, token)
 }
 
-func runLocalRunnerConfig(folder string, action string, args []string) error {
+func runLocalRunnerConfig(folder string, action string, args []string, token string) error {
 	scriptName := "config.sh"
 	if runtime.GOOS == "windows" || fileExists(filepath.Join(folder, "config.cmd")) {
 		scriptName = "config.cmd"
 	}
 	command := filepath.Join(folder, scriptName)
 	runArgs := append(configActionArgs(action), args...)
+	if token != "" {
+		runArgs = append(runArgs, "--token", token)
+	}
 	var cmd *exec.Cmd
 	if strings.EqualFold(scriptName, "config.cmd") {
-		cmd = exec.Command("cmd.exe", append([]string{"/c", command}, runArgs...)...)
+		if token != "" {
+			cmd = exec.Command("powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", configPowerShellScriptWithToken(command, runArgs))
+			cmd.Env = envWithRunnerToken(token, false)
+		} else {
+			cmd = exec.Command("cmd.exe", append([]string{"/c", command}, runArgs...)...)
+		}
+	} else if token != "" {
+		cmd = exec.Command("sh", "-lc", configShellLineWithToken(command, runArgs))
+		cmd.Env = append(os.Environ(), "RUNNER_MONITOR_RUNNER_TOKEN="+token)
 	} else {
 		cmd = exec.Command(command, runArgs...)
 	}
 	cmd.Dir = folder
 	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out)))
+		return fmt.Errorf("%w: %s", err, maskSecret(strings.TrimSpace(string(out)), token))
 	}
 	return nil
 }
 
-func runWSLRunnerConfig(folder string, action string, args []string) error {
+func runWSLRunnerConfig(folder string, action string, args []string, token string) error {
 	command := "./config.sh"
 	runArgs := append(configActionArgs(action), args...)
 	quoted := []string{"cd", shellQuote(folder), "&&", shellQuote(command)}
 	for _, arg := range runArgs {
 		quoted = append(quoted, shellQuote(arg))
 	}
+	if token != "" {
+		quoted = append(quoted, "--token", `"$RUNNER_MONITOR_RUNNER_TOKEN"`)
+	}
 	cmd := exec.Command("wsl.exe", "bash", "-lc", strings.Join(quoted, " "))
+	if token != "" {
+		cmd.Env = envWithRunnerToken(token, true)
+	}
 	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out)))
+		return fmt.Errorf("%w: %s", err, maskSecret(strings.TrimSpace(string(out)), token))
 	}
 	return nil
 }
@@ -387,6 +404,59 @@ func runWSLRunnerSvc(folder string, action string) error {
 	return nil
 }
 
+func configPowerShellScriptWithToken(command string, args []string) string {
+	parts := make([]string, 0, len(args))
+	for i := 0; i < len(args); i++ {
+		if args[i] == "--token" && i+1 < len(args) {
+			parts = append(parts, powerShellQuote("--token"), "$env:RUNNER_MONITOR_RUNNER_TOKEN")
+			i++
+			continue
+		}
+		parts = append(parts, powerShellQuote(args[i]))
+	}
+	return fmt.Sprintf("$argsList = @(%s); & %s @argsList", strings.Join(parts, ","), powerShellQuote(command))
+}
+
+func configShellLineWithToken(command string, args []string) string {
+	parts := []string{shellQuote(command)}
+	for i := 0; i < len(args); i++ {
+		if args[i] == "--token" && i+1 < len(args) {
+			parts = append(parts, "--token", `"$RUNNER_MONITOR_RUNNER_TOKEN"`)
+			i++
+			continue
+		}
+		parts = append(parts, shellQuote(args[i]))
+	}
+	return strings.Join(parts, " ")
+}
+
+func maskSecret(text string, secret string) string {
+	if secret == "" {
+		return text
+	}
+	return strings.ReplaceAll(text, secret, "<redacted>")
+}
+
+func envWithRunnerToken(token string, passToWSL bool) []string {
+	env := append(os.Environ(), "RUNNER_MONITOR_RUNNER_TOKEN="+token)
+	if passToWSL {
+		env = append(env, "WSLENV="+appendWSLEnv(os.Getenv("WSLENV"), "RUNNER_MONITOR_RUNNER_TOKEN"))
+	}
+	return env
+}
+
+func appendWSLEnv(existing string, name string) string {
+	for _, part := range strings.Split(existing, ":") {
+		if part == name {
+			return existing
+		}
+	}
+	if strings.TrimSpace(existing) == "" {
+		return name
+	}
+	return existing + ":" + name
+}
+
 func runWSLShellWithSudo(command string, originalErr error, originalOut []byte) error {
 	password, passwordErr := wslSudoPassword()
 	if passwordErr != nil {
@@ -443,7 +513,7 @@ func isUnderAnyWindowsRoot(pathValue string, roots []string) bool {
 			continue
 		}
 		root = strings.ToLower(filepath.Clean(root))
-		if pathValue == root || strings.HasPrefix(pathValue, root+string(os.PathSeparator)) {
+		if pathValue != root && strings.HasPrefix(pathValue, root+string(os.PathSeparator)) {
 			return true
 		}
 	}
@@ -454,10 +524,10 @@ func isUnderAnySlashRoot(pathValue string, roots []string) bool {
 	pathValue = pathCleanSlash(pathValue)
 	for _, root := range roots {
 		root = pathCleanSlash(root)
-		if root == "" || root == "." {
+		if root == "" || root == "." || root == "/" {
 			continue
 		}
-		if pathValue == root || strings.HasPrefix(pathValue, strings.TrimRight(root, "/")+"/") {
+		if pathValue != root && strings.HasPrefix(pathValue, strings.TrimRight(root, "/")+"/") {
 			return true
 		}
 	}
@@ -466,10 +536,10 @@ func isUnderAnySlashRoot(pathValue string, roots []string) bool {
 
 func pathCleanSlash(pathValue string) string {
 	pathValue = strings.ReplaceAll(strings.TrimSpace(pathValue), `\`, "/")
-	for strings.Contains(pathValue, "//") {
-		pathValue = strings.ReplaceAll(pathValue, "//", "/")
+	if pathValue == "" {
+		return ""
 	}
-	return strings.TrimRight(pathValue, "/")
+	return path.Clean(pathValue)
 }
 
 func needsElevatedWindowsRemoval(runner Runner) bool {
