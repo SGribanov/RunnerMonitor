@@ -18,7 +18,7 @@ func main() {
 	restartRepo := flag.String("restart-repo", "", "restart service-managed runners for owner/repo")
 	clearRepo := flag.String("clear-repo", "", "clear idle runner work directories for owner/repo")
 	clearRunner := flag.String("clear-runner", "", "clear one runner by name")
-	project := flag.String("project", "", "project folder name under C:\\Repos")
+	project := flag.String("project", "", "project folder name under configured projectsRoot")
 	repo := flag.String("repo", "", "GitHub owner/repo filter for runner operations")
 	removeRunner := flag.String("remove-runner", "", "remove one runner by name; dry-run unless --confirm is set")
 	addRunner := flag.String("add-runner", "", "add/configure one runner by name; dry-run unless --confirm is set")
@@ -35,6 +35,9 @@ func main() {
 	clearCurrent := flag.Bool("clear-current", false, "clear idle runner work directories for the current git origin repository")
 	clearIdle := flag.Bool("clear-idle", false, "clear all idle runner work directories")
 	disableAutostart := flag.Bool("disable-autostart", false, "disable boot autostart for service-managed runners without stopping them")
+	initConfig := flag.Bool("init-config", false, "create app-local RunnerMonitor settings file with defaults")
+	overwriteConfig := flag.Bool("overwrite-config", false, "overwrite existing settings file when used with --init-config")
+	showConfig := flag.Bool("show-config", false, "print effective RunnerMonitor settings with secrets masked")
 	configureRemote := flag.String("configure-remote", "", "prompt for SSH remote runner host settings and save them")
 	connectRemote := flag.String("connect-remote", "", "open the saved SSH remote runner host TUI")
 	flag.Parse()
@@ -55,6 +58,34 @@ func main() {
 	}
 	if *audit {
 		fmt.Print(app.RenderAudit(inventory))
+		return
+	}
+	if *initConfig {
+		path, created, err := app.InitSettings(*overwriteConfig)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "init config failed: %v\n", err)
+			os.Exit(1)
+		}
+		if created {
+			fmt.Printf("created config: %s\n", path)
+		} else {
+			fmt.Printf("config already exists: %s\n", path)
+		}
+		return
+	}
+	if *showConfig {
+		settings, err := app.LoadSettings()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "load config failed: %v\n", err)
+			os.Exit(1)
+		}
+		path, err := app.SettingsPath()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "settings path failed: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("path: %s\n", path)
+		fmt.Print(app.RenderSettings(settings))
 		return
 	}
 	if *disableAutostart {

@@ -205,9 +205,16 @@ func TestAddRunnerRejectsConfiguredFolderWithoutReplace(t *testing.T) {
 	if out, err := exec.Command("git", "-C", project, "remote", "add", "origin", "git@github.com:SGribanov/ProjectA.git").CombinedOutput(); err != nil {
 		t.Fatalf("git remote add failed: %v: %s", err, out)
 	}
-	oldRoot := defaultReposRoot
-	defaultReposRoot = reposRoot
-	t.Cleanup(func() { defaultReposRoot = oldRoot })
+	settingsPath := filepath.Join(t.TempDir(), "runner-monitor.json")
+	if err := SaveSettingsAt(settingsPath, Settings{
+		ProjectsRoot:       reposRoot,
+		WindowsRunnerRoots: []string{`C:\Runners`},
+		WSLRunnerRoots:     []string{"/home/gsv777/Runners"},
+		LinuxRunnerRoots:   []string{"/opt/Runners"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("RUNNER_MONITOR_CONFIG", settingsPath)
 
 	runnerFolder := t.TempDir()
 	if err := os.WriteFile(filepath.Join(runnerFolder, "config.cmd"), []byte("@echo off\r\n"), 0o755); err != nil {
@@ -267,6 +274,81 @@ func TestShellQuoteEscapesSingleQuotes(t *testing.T) {
 	got := shellQuote("runner's")
 	if got != "'runner'\"'\"'s'" {
 		t.Fatalf("shellQuote = %q", got)
+	}
+}
+
+func TestLoadSettingsFallsBackToDefaults(t *testing.T) {
+	got, err := LoadSettingsAt(filepath.Join(t.TempDir(), "missing.json"))
+	if err != nil {
+		t.Fatalf("LoadSettingsAt returned error: %v", err)
+	}
+	if got.ProjectsRoot != `C:\Repos` {
+		t.Fatalf("ProjectsRoot = %q", got.ProjectsRoot)
+	}
+	if len(got.WindowsRunnerRoots) != 1 || got.WindowsRunnerRoots[0] != `C:\Runners` {
+		t.Fatalf("WindowsRunnerRoots = %#v", got.WindowsRunnerRoots)
+	}
+	if len(got.WSLRunnerRoots) != 1 || got.WSLRunnerRoots[0] != "/home/gsv777/Runners" {
+		t.Fatalf("WSLRunnerRoots = %#v", got.WSLRunnerRoots)
+	}
+}
+
+func TestLoadSettingsReadsSudoPasswordValue(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "runner-monitor.json")
+	if err := SaveSettingsAt(path, Settings{
+		ProjectsRoot:       `D:\Repos`,
+		WindowsRunnerRoots: []string{`D:\Runners`},
+		WSLRunnerRoots:     []string{"/runnerbox/Runners"},
+		LinuxRunnerRoots:   []string{"/opt/Runners"},
+		WSLSudoPassword:    "secret",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := LoadSettingsAt(path)
+	if err != nil {
+		t.Fatalf("LoadSettingsAt returned error: %v", err)
+	}
+	if got.WSLSudoPassword != "secret" {
+		t.Fatalf("WSLSudoPassword was not loaded")
+	}
+	if got.ProjectsRoot != `D:\Repos` || got.WindowsRunnerRoots[0] != `D:\Runners` {
+		t.Fatalf("settings not loaded: %#v", got)
+	}
+}
+
+func TestRenderSettingsMasksSudoPassword(t *testing.T) {
+	got := RenderSettings(Settings{WSLSudoPassword: "secret"})
+	if strings.Contains(got, "secret") {
+		t.Fatalf("RenderSettings leaked password: %s", got)
+	}
+	if !strings.Contains(got, `"wslSudoPassword": "<set>"`) {
+		t.Fatalf("RenderSettings did not show masked password: %s", got)
+	}
+	empty := RenderSettings(Settings{})
+	if !strings.Contains(empty, `"wslSudoPassword": "<empty>"`) {
+		t.Fatalf("RenderSettings did not show empty password: %s", empty)
+	}
+}
+
+func TestSafeRunnerRootUsesConfiguredRoots(t *testing.T) {
+	settingsPath := filepath.Join(t.TempDir(), "runner-monitor.json")
+	if err := SaveSettingsAt(settingsPath, Settings{
+		ProjectsRoot:       `C:\Repos`,
+		WindowsRunnerRoots: []string{`D:\BuildAgents`},
+		WSLRunnerRoots:     []string{"/runnerbox/Runners"},
+		LinuxRunnerRoots:   []string{"/opt/Runners"},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("RUNNER_MONITOR_CONFIG", settingsPath)
+	if !isSafeRunnerRoot(Runner{Path: `D:\BuildAgents\SGribanov-RunnerMonitor\runner-1`}) {
+		t.Fatalf("configured Windows runner root should be safe")
+	}
+	if isSafeRunnerRoot(Runner{Path: `C:\Runners\SGribanov-RunnerMonitor\runner-1`}) {
+		t.Fatalf("unconfigured Windows runner root should not be safe")
+	}
+	if !isSafeRunnerRoot(Runner{Transport: "wsl", Path: "/runnerbox/Runners/SGribanov-RunnerMonitor/runner-1"}) {
+		t.Fatalf("configured WSL runner root should be safe")
 	}
 }
 

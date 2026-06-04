@@ -26,6 +26,50 @@ standard service mechanisms such as Windows Services, Linux systemd, and SSH.
 - Windows PowerShell for local Windows service discovery
 - WSL for Linux runner discovery on the current workstation
 
+## Settings
+
+RunnerMonitor reads host-specific settings from `runner-monitor.json` next to
+the executable:
+
+```powershell
+runner-monitor --init-config
+runner-monitor --show-config
+```
+
+For the default local build this is:
+
+```text
+C:\Repos\RunnerMonitor\bin\runner-monitor.json
+```
+
+The build script creates this file beside `runner-monitor.exe` if it does not
+already exist. The config can be moved or tested with `RUNNER_MONITOR_CONFIG`.
+`--show-config` masks `wslSudoPassword`; it prints `<set>` or `<empty>`, never
+the real value.
+
+Default config:
+
+```json
+{
+  "projectsRoot": "C:\\Repos",
+  "windowsRunnerRoots": [
+    "C:\\Runners"
+  ],
+  "wslRunnerRoots": [
+    "/home/gsv777/Runners"
+  ],
+  "linuxRunnerRoots": [
+    "/opt/Runners",
+    "/srv/Runners"
+  ],
+  "wslSudoPassword": ""
+}
+```
+
+Use `wslSudoPassword` only in the app-local config file. Do not commit a real
+password to the repository. Runner discovery, project resolution, safe folder
+deletion, and WSL sudo fallback all use these settings.
+
 ## Run
 
 ```powershell
@@ -74,8 +118,9 @@ runner-monitor --clear-idle
 ```
 
 Removal and reprovisioning are dry-run by default. The project selector is the
-folder name under `C:\Repos`, for example `RunnerMonitor` resolves
-`C:\Repos\RunnerMonitor` and reads its GitHub `origin`.
+folder name under configured `projectsRoot`. With the default config,
+`RunnerMonitor` resolves `C:\Repos\RunnerMonitor` and reads its GitHub
+`origin`.
 
 ```powershell
 runner-monitor --remove-runner ideabox-runner --repo SGribanov/IdeaBox

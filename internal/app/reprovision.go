@@ -10,8 +10,6 @@ import (
 	"strings"
 )
 
-var defaultReposRoot = `C:\Repos`
-
 type RemoveRunnerOptions struct {
 	Name         string
 	Project      string
@@ -217,7 +215,7 @@ func elevatedRemoveRunnerTarget(runner Runner, options RemoveRunnerOptions) (str
 }
 
 func ProjectRepoFromFolder(project string) (string, error) {
-	return ProjectRepoFromFolderAt(defaultReposRoot, project)
+	return ProjectRepoFromFolderAt(effectiveSettings().ProjectsRoot, project)
 }
 
 func ProjectRepoFromFolderAt(root string, project string) (string, error) {
@@ -390,13 +388,12 @@ func runWSLRunnerSvc(folder string, action string) error {
 }
 
 func runWSLShellWithSudo(command string, originalErr error, originalOut []byte) error {
-	passwordFile := wslSudoPasswordFileWindowsPath()
-	password, readErr := os.ReadFile(passwordFile)
-	if readErr != nil {
-		return fmt.Errorf("%w: %s; sudo fallback failed: cannot read sudo password file %s: %v", originalErr, strings.TrimSpace(string(originalOut)), passwordFile, readErr)
+	password, passwordErr := wslSudoPassword()
+	if passwordErr != nil {
+		return fmt.Errorf("%w: %s; sudo fallback failed: %v", originalErr, strings.TrimSpace(string(originalOut)), passwordErr)
 	}
 	cmd := exec.Command("wsl.exe", "--", "sudo", "-S", "-p", "", "bash", "-lc", command)
-	cmd.Stdin = strings.NewReader(string(password))
+	cmd.Stdin = strings.NewReader(password)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("%w: %s; sudo fallback failed: %v: %s", originalErr, strings.TrimSpace(string(originalOut)), err, strings.TrimSpace(string(out)))
 	}
@@ -431,13 +428,48 @@ func deleteRunnerFolder(runner Runner) error {
 
 func isSafeRunnerRoot(runner Runner) bool {
 	pathValue := filepath.Clean(runner.Path)
+	settings := effectiveSettings()
 	if runner.Transport == "wsl" || isWSLPath(runner.Path) {
-		return strings.HasPrefix(runner.Path, "/home/gsv777/Runners/") ||
-			strings.HasPrefix(runner.Path, "/opt/Runners/") ||
-			strings.HasPrefix(runner.Path, "/srv/Runners/")
+		return isUnderAnySlashRoot(runner.Path, append(settings.WSLRunnerRoots, settings.LinuxRunnerRoots...))
 	}
-	safeRoot := filepath.Clean(`C:\Runners`) + string(os.PathSeparator)
-	return strings.HasPrefix(strings.ToLower(pathValue), strings.ToLower(safeRoot))
+	return isUnderAnyWindowsRoot(pathValue, settings.WindowsRunnerRoots)
+}
+
+func isUnderAnyWindowsRoot(pathValue string, roots []string) bool {
+	pathValue = strings.ToLower(filepath.Clean(pathValue))
+	for _, root := range roots {
+		root = strings.TrimSpace(root)
+		if root == "" {
+			continue
+		}
+		root = strings.ToLower(filepath.Clean(root))
+		if pathValue == root || strings.HasPrefix(pathValue, root+string(os.PathSeparator)) {
+			return true
+		}
+	}
+	return false
+}
+
+func isUnderAnySlashRoot(pathValue string, roots []string) bool {
+	pathValue = pathCleanSlash(pathValue)
+	for _, root := range roots {
+		root = pathCleanSlash(root)
+		if root == "" || root == "." {
+			continue
+		}
+		if pathValue == root || strings.HasPrefix(pathValue, strings.TrimRight(root, "/")+"/") {
+			return true
+		}
+	}
+	return false
+}
+
+func pathCleanSlash(pathValue string) string {
+	pathValue = strings.ReplaceAll(strings.TrimSpace(pathValue), `\`, "/")
+	for strings.Contains(pathValue, "//") {
+		pathValue = strings.ReplaceAll(pathValue, "//", "/")
+	}
+	return strings.TrimRight(pathValue, "/")
 }
 
 func needsElevatedWindowsRemoval(runner Runner) bool {

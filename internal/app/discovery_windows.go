@@ -22,12 +22,7 @@ type windowsRunnerProcess struct {
 	CommandLine    string `json:"CommandLine"`
 }
 
-func discoverWindowsRunnerDirs(services map[string]windowsService, processes map[string]windowsRunnerProcess) ([]Runner, error) {
-	roots := []string{
-		`C:\Runners`,
-		`C:\actions-runner*`,
-		`C:\github-runners`,
-	}
+func discoverWindowsRunnerDirs(services map[string]windowsService, processes map[string]windowsRunnerProcess, roots []string) ([]Runner, error) {
 	files, err := findRunnerFiles(roots, 3)
 	if err != nil {
 		return nil, err

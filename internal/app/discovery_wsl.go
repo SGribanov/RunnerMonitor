@@ -9,8 +9,8 @@ import (
 	"strings"
 )
 
-func discoverWSLRunners() ([]Runner, error) {
-	cmd := exec.Command("wsl.exe", "sh", "-lc", "find /home /opt /srv -name .runner -type f 2>/dev/null | head -200")
+func discoverWSLRunners(roots []string) ([]Runner, error) {
+	cmd := exec.Command("wsl.exe", "sh", "-lc", wslFindRunnersCommand(roots))
 	out, err := cmd.Output()
 	if err != nil {
 		return nil, err
@@ -37,6 +37,24 @@ func discoverWSLRunners() ([]Runner, error) {
 	}
 	runners = append(runners, discoverWSLUnitOnlyRunners(runners)...)
 	return runners, nil
+}
+
+func wslFindRunnersCommand(roots []string) string {
+	if len(roots) == 0 {
+		roots = DefaultSettings().WSLRunnerRoots
+	}
+	quoted := make([]string, 0, len(roots))
+	for _, root := range roots {
+		root = strings.TrimSpace(root)
+		if root == "" {
+			continue
+		}
+		quoted = append(quoted, shellQuote(root))
+	}
+	if len(quoted) == 0 {
+		quoted = []string{shellQuote(DefaultSettings().WSLRunnerRoots[0])}
+	}
+	return "find " + strings.Join(quoted, " ") + " -name .runner -type f 2>/dev/null | head -200"
 }
 
 func discoverWSLUnitOnlyRunners(existing []Runner) []Runner {
@@ -124,14 +142,13 @@ func runWSLService(action string, serviceName string) error {
 }
 
 func runWSLServiceWithSudo(action string, serviceName string, originalErr error, originalOut []byte) error {
-	passwordFile := wslSudoPasswordFileWindowsPath()
-	password, readErr := os.ReadFile(passwordFile)
-	if readErr != nil {
+	password, passwordErr := wslSudoPassword()
+	if passwordErr != nil {
 		originalText := strings.TrimSpace(string(originalOut))
-		return fmt.Errorf("%w: %s; sudo fallback failed: cannot read sudo password file %s: %v", originalErr, originalText, passwordFile, readErr)
+		return fmt.Errorf("%w: %s; sudo fallback failed: %v", originalErr, originalText, passwordErr)
 	}
 	cmd := exec.Command("wsl.exe", "--", "sudo", "-S", "-p", "", "systemctl", action, serviceName)
-	cmd.Stdin = bytes.NewReader(password)
+	cmd.Stdin = bytes.NewReader([]byte(password))
 	if out, err := cmd.CombinedOutput(); err != nil {
 		originalText := strings.TrimSpace(string(originalOut))
 		sudoText := strings.TrimSpace(string(out))
@@ -140,10 +157,28 @@ func runWSLServiceWithSudo(action string, serviceName string, originalErr error,
 	return nil
 }
 
+func wslSudoPassword() (string, error) {
+	if password := effectiveSettings().WSLSudoPassword; strings.TrimSpace(password) != "" {
+		if !strings.HasSuffix(password, "\n") {
+			password += "\n"
+		}
+		return password, nil
+	}
+	passwordFile := wslSudoPasswordFileWindowsPath()
+	if passwordFile == "" {
+		return "", fmt.Errorf("wslSudoPassword is empty in RunnerMonitor settings")
+	}
+	password, readErr := os.ReadFile(passwordFile)
+	if readErr != nil {
+		return "", fmt.Errorf("wslSudoPassword is empty and legacy sudo password file %s is unreadable: %v", passwordFile, readErr)
+	}
+	return string(password), nil
+}
+
 func wslSudoPasswordFileWindowsPath() string {
 	passwordFile := os.Getenv("RUNNER_MONITOR_WSL_SUDO_FILE")
 	if passwordFile == "" {
-		return `C:\Users\gsv777\Desktop\WSL_sudo.txt`
+		return ""
 	}
 	if strings.HasPrefix(passwordFile, "/mnt/") && len(passwordFile) > len("/mnt/c/") {
 		drive := strings.ToUpper(passwordFile[5:6])

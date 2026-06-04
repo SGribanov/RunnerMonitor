@@ -325,3 +325,23 @@ project registry by accident. Blindly cloning existing runner folders remains a
 later milestone because current runner directories can contain auto-update
 junctions or symlinks; v1 configures an existing prepared runner distribution
 folder instead.
+
+## 2026-06-04 -- App-local settings file
+
+RunnerMonitor now uses `runner-monitor.json` next to the compiled executable,
+not a roaming user-config path. This fits the planned dedicated runner machine:
+the executable and config can be copied as one app folder. `RUNNER_MONITOR_CONFIG`
+remains an override for tests or unusual launch contexts. The app-local config
+contains `projectsRoot`, Windows/WSL/Linux runner roots, and the direct
+`wslSudoPassword` value requested by the operator. `--show-config` masks that
+password as `<set>`/`<empty>`, and `scripts\build.ps1` creates a default config
+beside `runner-monitor.exe` without overwriting an existing one.
+
+## 2026-06-04 -- TUI table direction
+
+The current TUI problems come from a hand-rendered fixed-width table, not from
+Bubble Tea itself. The better next step is to keep the Charmbracelet stack and
+replace the table surface with `bubbles/table`, using `tea.WindowSizeMsg` to
+track terminal dimensions and recompute columns. If the command/status area
+needs scrolling, `bubbles/viewport` should own that bounded region. This keeps
+the app lightweight while making resize behavior deterministic.
