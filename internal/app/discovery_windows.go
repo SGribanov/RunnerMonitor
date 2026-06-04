@@ -24,7 +24,7 @@ type windowsRunnerProcess struct {
 	CommandLine    string `json:"CommandLine"`
 }
 
-var windowsDiscoveryTimeout = 5 * time.Second
+var windowsDiscoveryTimeout = 30 * time.Second
 
 func discoverWindowsRunnerDirs(services map[string]windowsService, processes map[string]windowsRunnerProcess, roots []string) ([]Runner, error) {
 	files, err := findRunnerFiles(roots, 3)

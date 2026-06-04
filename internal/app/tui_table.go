@@ -161,7 +161,7 @@ func tuiHelp(width int, height int) string {
 
 func busyText(value bool) string {
 	if value {
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true).Render("true")
+		return "true"
 	}
 	return "false"
 }

@@ -92,6 +92,16 @@ assembler with `junk '(eax)' after expression`. Installing MSYS2 and
 prefer `C:\msys64\ucrt64\bin` over `C:\Soft\mingw-w64-gcc-mcf\mingw64\bin`.
 With MSYS2 UCRT64 GCC 16.1.0, `go test -race ./...` passes.
 
+## 2026-06-04 -- TUI status visibility
+
+The first Windows discovery timeout fix used a 5-second bound, but local
+service/process discovery can exceed that during startup. The symptom was
+incomplete TUI status for `ideabox-runner` even though GitHub returned
+`online`/`busy=true`. A 30-second bound still prevents indefinite child
+PowerShell hangs while preserving normal status discovery. Avoid ANSI-styled
+strings inside `bubbles/table` cell values; plain `true`/`false` keeps table
+width accounting and selected-row rendering predictable.
+
 ## 2026-06-03 -- Already-running services
 
 Starting an already running Windows service or active WSL unit can still require
