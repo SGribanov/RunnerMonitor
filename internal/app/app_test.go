@@ -703,6 +703,14 @@ func TestAppendWSLEnvPreservesExistingEntries(t *testing.T) {
 }
 
 func TestRefreshWithGitHubCacheUsesCachedGitHubStatus(t *testing.T) {
+	previousDiscoverLocal := discoverLocal
+	discoverLocal = func() ([]Runner, error) {
+		return nil, nil
+	}
+	t.Cleanup(func() {
+		discoverLocal = previousDiscoverLocal
+	})
+
 	calls := 0
 	loader := func(repos []string) (map[string]GitHubRunnerStatus, map[string]QueueStatus, error) {
 		calls++

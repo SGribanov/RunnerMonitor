@@ -9,6 +9,8 @@ import (
 
 const autoRefreshGitHubCacheTTL = 30 * time.Second
 
+var discoverLocal = DiscoverLocal
+
 func Refresh() (Inventory, error) {
 	return refreshWithGitHubStatus(LoadGitHubStatus)
 }
@@ -23,7 +25,7 @@ func refreshWithGitHubStatus(loadGitHubStatus func([]string) (map[string]GitHubR
 	var warnings []error
 	var runners []Runner
 
-	local, err := DiscoverLocal()
+	local, err := discoverLocal()
 	if err != nil {
 		warnings = append(warnings, err)
 	}
