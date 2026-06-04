@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
@@ -808,6 +809,17 @@ func TestRemoteLinuxTUICommandQuotesPath(t *testing.T) {
 	wantCommand := "'/opt/Runner Monitor/runner-monitor'"
 	if len(args) != 3 || args[2] != wantCommand {
 		t.Fatalf("remoteTUISSHArgs = %#v", args)
+	}
+}
+
+func TestWindowsDiscoveryPowerShellTimeoutReturnsWarning(t *testing.T) {
+	original := windowsDiscoveryTimeout
+	windowsDiscoveryTimeout = time.Nanosecond
+	t.Cleanup(func() { windowsDiscoveryTimeout = original })
+
+	_, err := runWindowsDiscoveryPowerShell("Start-Sleep -Seconds 5")
+	if err == nil || !strings.Contains(err.Error(), "timed out") {
+		t.Fatalf("expected timeout warning, got %v", err)
 	}
 }
 

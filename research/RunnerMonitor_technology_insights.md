@@ -72,6 +72,17 @@ auto-refresh should avoid repeated `gh` process fan-out every few seconds by
 briefly caching GitHub status for automatic refreshes while keeping manual
 refresh fresh.
 
+## 2026-06-04 -- Windows discovery subprocess timeout
+
+After the `v0.3.0` release, a PowerShell window with the inherited
+`runner-monitor.exe` title remained visible after TUI exit. Process inspection
+showed the lingering command was Windows service discovery:
+`Get-CimInstance Win32_Service ... ConvertTo-Json`. Discovery commands should be
+bounded with `context.WithTimeout`; otherwise a slow or stuck CIM provider can
+outlive Bubble Tea shutdown and keep the launch window around. Race validation
+is still a local toolchain issue rather than a code validation signal until a
+working cgo/GCC toolchain is available.
+
 ## 2026-06-03 -- Already-running services
 
 Starting an already running Windows service or active WSL unit can still require
