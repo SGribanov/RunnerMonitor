@@ -34,7 +34,7 @@ func runnerTableRows(runners []Runner) []table.Row {
 			runner.Name,
 			runner.LocalState,
 			runner.GitHubStatus,
-			boolText(runner.Busy),
+			busyText(runner.Busy),
 			queueText(runner),
 			strings.Join(runner.Labels, ","),
 			runner.Path,
@@ -159,9 +159,9 @@ func tuiHelp(width int, height int) string {
 	return strings.Join(lines, "\n")
 }
 
-func boolText(value bool) string {
+func busyText(value bool) string {
 	if value {
-		return "true"
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("196")).Bold(true).Render("true")
 	}
 	return "false"
 }

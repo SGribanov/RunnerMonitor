@@ -204,8 +204,18 @@ func TestRunnerTableRowsIncludeProjectAndQueue(t *testing.T) {
 	if rows[0][2] != "RunnerMonitor" {
 		t.Fatalf("project column = %q", rows[0][2])
 	}
-	if rows[0][6] != "true" || rows[0][7] != "2/1 stale" {
+	if !strings.Contains(rows[0][6], "true") || rows[0][7] != "2/1 stale" {
 		t.Fatalf("busy/queue columns = %q/%q", rows[0][6], rows[0][7])
+	}
+}
+
+func TestBusyTextColorsOnlyTrue(t *testing.T) {
+	busy := busyText(true)
+	if !strings.Contains(busy, "true") {
+		t.Fatalf("busy true should keep true text, got %q", busy)
+	}
+	if idle := busyText(false); idle != "false" {
+		t.Fatalf("busy false should stay plain, got %q", idle)
 	}
 }
 
@@ -260,6 +270,35 @@ func TestTUIHelpKeyTogglesHelpAndEscClosesIt(t *testing.T) {
 	}
 	if cmd != nil {
 		t.Fatalf("esc while help is open should not quit")
+	}
+}
+
+func TestUpdateNoticeOnlyShowsNewerRelease(t *testing.T) {
+	got := updateNotice("v0.2.0", "v0.3.0", "https://github.com/SGribanov/RunnerMonitor/releases/tag/v0.3.0")
+	if !strings.Contains(got, "update available: v0.2.0 -> v0.3.0") {
+		t.Fatalf("updateNotice did not report newer release: %q", got)
+	}
+	if updateNotice("v0.2.0", "v0.2.0", "") != "" {
+		t.Fatalf("same version should not report an update")
+	}
+	if updateNotice("v0.2.0", "v0.1.9", "") != "" {
+		t.Fatalf("older version should not report an update")
+	}
+}
+
+func TestModelShowsUpdateNoticeWithoutReplacingStatus(t *testing.T) {
+	model := NewModel(Inventory{Runners: []Runner{{Name: "runner-1", Repo: "SGribanov/RunnerMonitor"}}})
+	updated, _ := model.Update(updateCheckDoneMsg{notice: "update available: v0.2.0 -> v0.3.0"})
+	noticed, ok := updated.(Model)
+	if !ok {
+		t.Fatalf("updated model has type %T", updated)
+	}
+	view := noticed.View()
+	if !strings.Contains(view, "update available: v0.2.0 -> v0.3.0") {
+		t.Fatalf("view missing update notice:\n%s", view)
+	}
+	if !strings.Contains(view, "ready") {
+		t.Fatalf("update notice should not replace status message:\n%s", view)
 	}
 }
 

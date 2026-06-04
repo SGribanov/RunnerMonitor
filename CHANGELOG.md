@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.1] - 2026-06-04
+
+### Added
+
+- TUI checks once on startup whether a newer GitHub release is available and
+  shows a concise update notice when one exists.
+- TUI has a concise in-app help panel opened with `h`, `?`, or `help`.
+
+### Changed
+
+- `Busy=true` is highlighted in the TUI table while `false` remains plain text.
+- README and README_RU document in-app help and startup update notices.
+
 ## [0.2.0] - 2026-06-04
 
 ### Added
@@ -37,5 +50,6 @@
 - Release ZIP includes only a sanitized default config with an empty
   `wslSudoPassword`.
 
+[0.2.1]: https://github.com/SGribanov/RunnerMonitor/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/SGribanov/RunnerMonitor/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/SGribanov/RunnerMonitor/releases/tag/v0.1.0

@@ -19,6 +19,8 @@ information, repository ownership, and safe lifecycle commands.
 - Displays busy state, queued workflow count, and stale queued workflow count.
 - Auto-refreshes TUI state every 5 seconds while keeping the previous table
   visible during refresh.
+- Checks GitHub Releases once on TUI startup and shows a concise update notice
+  when a newer version is available.
 - Starts, stops, restarts, clears, removes, and reprovisions selected runners.
 - Keeps destructive operations guarded by dry-runs, busy-runner checks, and
   explicit confirmation.
@@ -58,7 +60,7 @@ Download the latest ready-to-run Windows package from
 [GitHub Releases](https://github.com/SGribanov/RunnerMonitor/releases/latest):
 
 ```text
-RunnerMonitor-v0.2.0-windows-x64.zip
+RunnerMonitor-v0.2.1-windows-x64.zip
 ```
 
 Extract the ZIP and start the TUI:
@@ -167,6 +169,11 @@ Runner information auto-refreshes every 5 seconds by default. Change
 interval. The `refresh` command starts an immediate refresh; when existing data
 is available, the table stays visible until the new data arrives.
 
+On startup, the TUI performs one best-effort GitHub Releases check through
+`gh`. If the internet is unavailable or the check fails, RunnerMonitor starts
+normally and does not show an error. If a newer release exists, a short update
+notice appears above the command input.
+
 Press `h` or `?`, or type `help`, to open the in-app help panel. It gives a
 short command reference without leaving the TUI. `Esc` closes help first; when
 help is closed, `Esc` exits the TUI.
@@ -194,7 +201,7 @@ help is closed, `Esc` exits the TUI.
 
 The table is resize-aware. On narrow terminals, low-priority columns are hidden
 before the main project, runner, status, busy, and queue columns are allowed to
-drift.
+drift. In the TUI table, `Busy=true` is highlighted; `false` remains plain.
 
 ## CLI Command Reference
 
