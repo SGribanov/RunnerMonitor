@@ -3,7 +3,7 @@
 
 ## Current Phase
 
-Milestones 1-2 implemented; validation and handoff in progress.
+Milestones 1-3 implemented; PR merged and GitHub license detection confirmed.
 
 ## Done
 
@@ -20,16 +20,16 @@ Milestones 1-2 implemented; validation and handoff in progress.
   Dependabot config.
 - Updated GitHub repository description and topics.
 - Updated research insights in the repo and IdeaBox vault.
+- Created and merged PR #11 into `main`.
+- Confirmed GitHub detects the repository license as MIT.
 
 ## In Progress
 
-- Final commit, push, GitHub license detection check, and issue handoff.
+- None.
 
 ## Next
 
-- Commit and push branch `codex/10-github-ready-docs`.
-- Confirm GitHub detects the MIT license after push.
-- Publish issue handoff.
+- None.
 
 ## Decisions
 
@@ -46,4 +46,5 @@ Milestones 1-2 implemented; validation and handoff in progress.
 - Passed: `git diff --check`.
 - Passed: real WSL sudo password scan excluding `bin`.
 - Passed: IdeaBox watcher status after vault sync.
-- Pending: GitHub metadata/license check after push.
+- Passed: GitHub metadata check; `licenseInfo` is `MIT License`.
+- Passed: PR #11 merged and issue #10 closed.

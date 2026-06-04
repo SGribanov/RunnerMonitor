@@ -37,14 +37,14 @@ Validation:
 - Manual markdown review.
 - `rg` checks for stale hard-coded user-secret guidance.
 
-## Milestone 3 -- Validation And Handoff `[~]`
+## Milestone 3 -- Validation And Handoff `[x]`
 
 Goal: verify the docs changes do not break the repo and publish GitHub handoff.
 
 Tasks:
 - [x] Run Go tests and build.
 - [x] Update research insights in repo and IdeaBox vault.
-- [ ] Publish issue handoff.
+- [x] Publish issue handoff.
 
 Validation:
 - `go test ./...`
