@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/base64"
 	"fmt"
 	"os"
 	"os/exec"
@@ -157,21 +158,30 @@ func clearDirectoryContents(dir string) error {
 }
 
 func clearWSLRunnerFolder(root string) error {
-	quotedRoot := shellQuote(root)
-	script := fmt.Sprintf(`
-root=%s
-work="$root/_work"
-mkdir -p "$work"
-find "$work" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
-find "$root" -maxdepth 1 -type f \( -name 'actions-runner*.zip' -o -name 'actions-runner*.tar.gz' \) -delete
-`, quotedRoot)
-	cmd := exec.Command("wsl.exe", "sh", "-lc", script)
+	encodedRoot := base64.StdEncoding.EncodeToString([]byte(root))
+	script := `
+import base64
+import pathlib
+import shutil
+import sys
+
+root = pathlib.Path(base64.b64decode(sys.argv[1]).decode("utf-8"))
+if not str(root):
+    raise SystemExit("runner root argument is empty")
+work = root / "_work"
+work.mkdir(parents=True, exist_ok=True)
+for child in work.iterdir():
+    if child.is_dir() and not child.is_symlink():
+        shutil.rmtree(child)
+    else:
+        child.unlink(missing_ok=True)
+for pattern in ("actions-runner*.zip", "actions-runner*.tar.gz"):
+    for child in root.glob(pattern):
+        child.unlink(missing_ok=True)
+`
+	cmd := exec.Command("wsl.exe", "--", "python3", "-c", script, encodedRoot)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out)))
 	}
 	return nil
-}
-
-func shellQuote(value string) string {
-	return "'" + strings.ReplaceAll(value, "'", "'\"'\"'") + "'"
 }

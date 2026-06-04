@@ -153,9 +153,16 @@ func runWindowsService(action string, serviceName string) error {
 	default:
 		return fmt.Errorf("unsupported action %q", action)
 	}
-	cmd := exec.Command("powershell", "-NoProfile", "-Command", fmt.Sprintf("%s -Name %q", verb, serviceName))
+	script := `
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+$ServiceName = $env:RUNNER_MONITOR_SERVICE_NAME
+` + verb + ` -Name $ServiceName -ErrorAction Stop
+`
+	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script)
+	cmd.Env = append(os.Environ(), "RUNNER_MONITOR_SERVICE_NAME="+serviceName)
 	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out)))
+		return fmt.Errorf("%w: service control may require elevated PowerShell: %s", err, strings.TrimSpace(string(out)))
 	}
 	return nil
 }
@@ -217,9 +224,15 @@ foreach ($proc in $procs) {
 }
 
 func disableWindowsServiceAutostart(serviceName string) error {
-	cmd := exec.Command("powershell", "-NoProfile", "-Command", fmt.Sprintf("Set-Service -Name %q -StartupType Manual", serviceName))
+	script := `
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+Set-Service -Name $env:RUNNER_MONITOR_SERVICE_NAME -StartupType Manual -ErrorAction Stop
+`
+	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script)
+	cmd.Env = append(os.Environ(), "RUNNER_MONITOR_SERVICE_NAME="+serviceName)
 	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out)))
+		return fmt.Errorf("%w: service control may require elevated PowerShell: %s", err, strings.TrimSpace(string(out)))
 	}
 	return nil
 }

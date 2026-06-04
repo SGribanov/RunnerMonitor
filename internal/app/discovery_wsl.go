@@ -1,7 +1,9 @@
 package app
 
 import (
+	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 	"path"
 	"strings"
@@ -116,15 +118,45 @@ func wslServiceState(serviceName string) string {
 func runWSLService(action string, serviceName string) error {
 	cmd := exec.Command("wsl.exe", "systemctl", action, serviceName)
 	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out)))
+		return runWSLServiceWithSudo(action, serviceName, err, out)
 	}
 	return nil
+}
+
+func runWSLServiceWithSudo(action string, serviceName string, originalErr error, originalOut []byte) error {
+	passwordFile := wslSudoPasswordFileWindowsPath()
+	password, readErr := os.ReadFile(passwordFile)
+	if readErr != nil {
+		originalText := strings.TrimSpace(string(originalOut))
+		return fmt.Errorf("%w: %s; sudo fallback failed: cannot read sudo password file %s: %v", originalErr, originalText, passwordFile, readErr)
+	}
+	cmd := exec.Command("wsl.exe", "--", "sudo", "-S", "-p", "", "systemctl", action, serviceName)
+	cmd.Stdin = bytes.NewReader(password)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		originalText := strings.TrimSpace(string(originalOut))
+		sudoText := strings.TrimSpace(string(out))
+		return fmt.Errorf("%w: %s; sudo fallback failed: %v: %s", originalErr, originalText, err, sudoText)
+	}
+	return nil
+}
+
+func wslSudoPasswordFileWindowsPath() string {
+	passwordFile := os.Getenv("RUNNER_MONITOR_WSL_SUDO_FILE")
+	if passwordFile == "" {
+		return `C:\Users\gsv777\Desktop\WSL_sudo.txt`
+	}
+	if strings.HasPrefix(passwordFile, "/mnt/") && len(passwordFile) > len("/mnt/c/") {
+		drive := strings.ToUpper(passwordFile[5:6])
+		rest := strings.TrimPrefix(passwordFile[7:], "/")
+		return drive + `:\` + strings.ReplaceAll(rest, "/", `\`)
+	}
+	return passwordFile
 }
 
 func disableWSLServiceAutostart(serviceName string) error {
 	cmd := exec.Command("wsl.exe", "systemctl", "disable", serviceName)
 	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out)))
+		return runWSLServiceWithSudo("disable", serviceName, err, out)
 	}
 	return nil
 }

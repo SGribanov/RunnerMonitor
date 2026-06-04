@@ -5,7 +5,8 @@ $Exe = Join-Path $Root "bin\runner-monitor.exe"
 $NeedsBuild = -not (Test-Path -LiteralPath $Exe)
 if (-not $NeedsBuild) {
     $ExeTime = (Get-Item -LiteralPath $Exe).LastWriteTimeUtc
-    $NewerSource = Get-ChildItem -LiteralPath $Root -Recurse -File -Include "*.go", "go.mod", "go.sum" |
+    $NewerSource = Get-ChildItem -LiteralPath $Root -Recurse -File |
+        Where-Object { $_.Extension -eq ".go" -or $_.Name -in @("go.mod", "go.sum") } |
         Where-Object { $_.LastWriteTimeUtc -gt $ExeTime } |
         Select-Object -First 1
     $NeedsBuild = $null -ne $NewerSource

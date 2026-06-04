@@ -285,3 +285,15 @@ The TUI supports `clear N`, `clear idle`, and opt-in `auto-clear on/off`.
 Automatic cleanup is tied to refresh instead of a permanent background loop, so
 cleanup happens only after a fresh idle check and avoids silently racing new
 jobs.
+
+## 2026-06-04 -- Cleanup service-control fallbacks
+
+Non-elevated Windows PowerShell cannot stop service-managed GitHub runners, so
+Windows service cleanup must fail before deleting `_work` and clearly say that
+elevated PowerShell is required. Setting PowerShell output encoding to UTF-8
+keeps that error readable in RunnerMonitor output. WSL systemd cleanup needs a
+sudo fallback because `systemctl stop` can return interactive-authentication
+errors. Passing the sudo password through stdin to `wsl.exe -- sudo -S ...`
+works reliably; WSL shell argument and stdin forwarding through `sh -c` were
+not reliable in this environment, so WSL folder cleanup uses `wsl.exe -- python3
+-c` with the runner path passed as base64.
