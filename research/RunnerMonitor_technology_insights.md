@@ -357,3 +357,14 @@ labels, and path; narrow terminals hide low-priority columns and shrink
 remaining columns instead of letting rows drift. Existing numeric commands still
 work, and commands such as `start`, `stop`, `clear`, and `logs` can now target
 the selected row when no number is provided.
+
+## 2026-06-04 -- GitHub community profile files
+
+GitHub repository best-practice guidance was refreshed through GitHub Docs:
+README, license, contribution guidelines, and code of conduct are the core
+signals that communicate project expectations. RunnerMonitor now adds a root
+MIT `LICENSE`, English `README.md`, Russian `README_RU.MD`, `CONTRIBUTING.md`,
+`SECURITY.md`, `CODE_OF_CONDUCT.md`, issue templates, PR template,
+`CODEOWNERS`, Dependabot config for Go modules, and an expanded `.gitignore`
+that excludes generated builds and local config/secrets. GitHub repo metadata
+was also updated with a description and topics for discoverability.

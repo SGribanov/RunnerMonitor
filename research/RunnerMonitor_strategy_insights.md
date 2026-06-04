@@ -4,7 +4,7 @@
 |---|---|
 | Project | RunnerMonitor |
 | Type | strategy-research |
-| Last updated | 2026-06-03 |
+| Last updated | 2026-06-04 |
 | Status | active |
 | Tags | ci-runners, github-actions, tui, operations |
 
@@ -42,6 +42,15 @@ Runner cleanup must be evidence-driven and explicit. The app should classify
 runners as `keep`, `investigate`, or `candidate-remove`, but actual deletion of
 services, GitHub registrations, or folders requires separate approval for each
 runner.
+
+## 2026-06-04 -- GitHub-facing documentation posture
+
+RunnerMonitor should present itself on GitHub as an operator safety tool, not as
+a generic CI dashboard. The main README is English-first for GitHub visibility,
+while `README_RU.MD` keeps the same operator guidance in Russian for the local
+working context. The documentation should emphasize purpose, current stack,
+quick start, command reference, remote-runner topology, and safety gates around
+cleanup/removal/reprovisioning.
 
 ## 2026-06-03 -- First cleanup candidates
 

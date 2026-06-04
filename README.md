@@ -1,51 +1,106 @@
 # RunnerMonitor
 
-Lightweight TUI for monitoring and controlling self-hosted CI runners.
+[Русская версия](README_RU.MD)
 
-RunnerMonitor is designed around a simple topology: run the TUI on the operator
-machine and control local, WSL, and future dedicated runner hosts through
-standard service mechanisms such as Windows Services, Linux systemd, and SSH.
+RunnerMonitor is a lightweight terminal UI and command-line tool for monitoring
+and controlling self-hosted CI runners. It was built for a workstation that has
+multiple GitHub Actions runners across Windows and WSL/Linux, with a planned
+move to a dedicated runner host on the local network.
 
-## Current scope
+The tool combines local runner lifecycle state with GitHub runner state, queue
+information, repository ownership, and safe lifecycle commands.
 
-- Auto-discover GitHub Actions runner directories from local Windows and WSL.
-- Merge local lifecycle state with GitHub runner status through `gh api`.
-- Show queued and stale queued workflow counts per repository.
-- Show the project each runner belongs to in the TUI/audit tables.
-- Control service-managed runners with short commands such as `start 1`,
-  `stop 1`, and `restart 1`.
-- Control manual Windows `run.cmd` runners in a hidden background process.
-- Track runner folder migration into common `Runners` directories as a separate
-  safety-gated phase.
-- Keep OneDev support as a follow-up phase.
+## What It Does
+
+- Discovers GitHub Actions runner folders from configured Windows, WSL, and
+  Linux runner roots.
+- Shows the project/repository each runner belongs to.
+- Merges local service/process state with GitHub status from `gh api`.
+- Displays busy state, queued workflow count, and stale queued workflow count.
+- Starts, stops, restarts, clears, removes, and reprovisions selected runners.
+- Keeps destructive operations guarded by dry-runs, busy-runner checks, and
+  explicit confirmation.
+- Provides project-scoped commands that Codex or an operator can run before a
+  push or CI wait.
+- Supports saved SSH remote-runner host profiles for the future dedicated
+  runner machine.
+- Keeps OneDev support as a future provider-oriented direction.
+
+## Stack
+
+- Go 1.26+
+- Charmbracelet Bubble Tea for the TUI
+- Charmbracelet Bubbles for table and text input widgets
+- Charmbracelet Lip Gloss for terminal styling
+- GitHub CLI (`gh`) for GitHub Actions runner and workflow data
+- Windows PowerShell for Windows service discovery/control
+- WSL and Linux systemd for Linux runner discovery/control
+- SSH for remote runner-host access
 
 ## Requirements
 
 - Go 1.26+
-- GitHub CLI authenticated with access to the monitored repositories
-- Windows PowerShell for local Windows service discovery
-- WSL for Linux runner discovery on the current workstation
+- GitHub CLI authenticated with access to monitored repositories:
 
-## Settings
+  ```powershell
+  gh auth status
+  ```
 
-RunnerMonitor reads host-specific settings from `runner-monitor.json` next to
-the executable:
+- Windows PowerShell for local Windows service discovery.
+- WSL for current-workstation Linux runner discovery.
+- `git` for current-project repository detection.
+
+## Quick Start
+
+Build the executable and create the app-local config:
 
 ```powershell
-runner-monitor --init-config
-runner-monitor --show-config
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\build.ps1
+.\runner-monitor.ps1 --show-config
 ```
 
-For the default local build this is:
+Open the TUI:
+
+```powershell
+.\runner-monitor.ps1
+```
+
+Print inventory once:
+
+```powershell
+.\runner-monitor.ps1 --once
+```
+
+Audit runner cleanup candidates:
+
+```powershell
+.\runner-monitor.ps1 --audit
+```
+
+Start runners for the current GitHub project:
+
+```powershell
+.\runner-monitor.ps1 --start-current
+```
+
+## Configuration
+
+RunnerMonitor reads host-specific settings from `runner-monitor.json` next to
+the executable. For the default local build, the config path is:
 
 ```text
 C:\Repos\RunnerMonitor\bin\runner-monitor.json
 ```
 
-The build script creates this file beside `runner-monitor.exe` if it does not
-already exist. The config can be moved or tested with `RUNNER_MONITOR_CONFIG`.
-`--show-config` masks `wslSudoPassword`; it prints `<set>` or `<empty>`, never
-the real value.
+Create or inspect it:
+
+```powershell
+.\runner-monitor.ps1 --init-config
+.\runner-monitor.ps1 --show-config
+```
+
+`--show-config` masks `wslSudoPassword` as `<set>` or `<empty>` and never prints
+the actual value.
 
 Default config:
 
@@ -66,123 +121,156 @@ Default config:
 }
 ```
 
-Use `wslSudoPassword` only in the app-local config file. Do not commit a real
-password to the repository. Runner discovery, project resolution, safe folder
-deletion, and WSL sudo fallback all use these settings.
+Settings fields:
 
-## Run
+| Field | Purpose |
+|---|---|
+| `projectsRoot` | Root directory used by `--project`, for example `C:\Repos`. |
+| `windowsRunnerRoots` | Windows runner root folders to scan and treat as safe for runner-folder deletion. |
+| `wslRunnerRoots` | WSL runner root folders to scan. |
+| `linuxRunnerRoots` | Linux runner root folders used on a native Linux runner host. |
+| `wslSudoPassword` | Direct WSL sudo password value for fallback service control. Keep it only in the app-local config. |
+
+For tests or special launch contexts, override the config path:
 
 ```powershell
-go run ./cmd/runner-monitor
-go run ./cmd/runner-monitor --once
-go run ./cmd/runner-monitor --audit
-go run ./cmd/runner-monitor --start-repo SGribanov/DeltaG
-go run ./cmd/runner-monitor --start-current
-go run ./cmd/runner-monitor --disable-autostart
-go run ./cmd/runner-monitor --configure-remote runnerbox
-go run ./cmd/runner-monitor --connect-remote runnerbox
+$env:RUNNER_MONITOR_CONFIG = "D:\Temp\runner-monitor.json"
 ```
+
+Do not commit a real `runner-monitor.json` or sudo password.
+
+## TUI Usage
 
 Inside the TUI:
 
-- `refresh`
-- arrow keys select a runner
-- `start [N]`
-- `stop [N]`
-- `restart [N]`
-- `force-stop [N]`
-- `force-restart [N]`
-- `clear [N]`
-- `remove [N]`
-- `remove [N] confirm`
-- `delete [N] confirm`
-- `logs [N]`
-- `connect remote runnerbox`
-- `q`
+| Command | Description |
+|---|---|
+| `refresh` | Refresh local and GitHub runner state. |
+| Arrow keys | Select a runner row. |
+| `start [N]` | Start runner `N`, or the selected runner if `N` is omitted. |
+| `stop [N]` | Stop runner `N`, or the selected runner if `N` is omitted. |
+| `restart [N]` | Restart runner `N`, or the selected runner if `N` is omitted. |
+| `force-stop [N]` | Stop even when GitHub reports the runner as busy. Use carefully. |
+| `force-restart [N]` | Restart even when GitHub reports the runner as busy. Use carefully. |
+| `clear [N]` | Safely clear idle runner work files for runner `N` or selected row. |
+| `clear idle` | Clear all idle runners. Busy runners are skipped. |
+| `auto-clear on` | Run safe idle cleanup after refresh. |
+| `auto-clear off` | Disable refresh-triggered auto cleanup. |
+| `remove [N]` | Dry-run GitHub runner unregistration for runner `N` or selected row. |
+| `remove [N] confirm` | Execute runner unregistration after confirmation. |
+| `delete [N] confirm` | Unregister and delete a safe runner folder. |
+| `logs [N]` | Open runner logs for runner `N` or selected row. |
+| `connect remote NAME` | Open the saved remote RunnerMonitor TUI over SSH. |
+| `q`, `quit`, `exit`, `Esc`, `Ctrl+C` | Exit the TUI. |
 
-Commands with `[N]` can use either a runner number or the currently selected
-runner row.
+The table is resize-aware. On narrow terminals, low-priority columns are hidden
+before the main project, runner, status, busy, and queue columns are allowed to
+drift.
 
-Codex/operator automation can start runners for a project without opening the
-TUI:
+## CLI Command Reference
+
+Inventory and audit:
 
 ```powershell
-runner-monitor --start-repo SGribanov/DeltaG
-runner-monitor --start-current
-runner-monitor --stop-repo SGribanov/DeltaG
-runner-monitor --restart-repo SGribanov/DeltaG
+.\runner-monitor.ps1 --once
+.\runner-monitor.ps1 --audit
 ```
 
-Safe cleanup keeps runner registration and binaries intact:
+Project-scoped lifecycle:
 
 ```powershell
-runner-monitor --clear-repo SGribanov/DeltaG
-runner-monitor --clear-current
-runner-monitor --clear-idle
+.\runner-monitor.ps1 --start-repo SGribanov/DeltaG
+.\runner-monitor.ps1 --stop-repo SGribanov/DeltaG
+.\runner-monitor.ps1 --restart-repo SGribanov/DeltaG
 ```
 
-Removal and reprovisioning are dry-run by default. The project selector is the
-folder name under configured `projectsRoot`. With the default config,
-`RunnerMonitor` resolves `C:\Repos\RunnerMonitor` and reads its GitHub
-`origin`.
+Current Git project lifecycle:
 
 ```powershell
-runner-monitor --remove-runner ideabox-runner --repo SGribanov/IdeaBox
-runner-monitor --remove-runner ideabox-runner --repo SGribanov/IdeaBox --confirm
-runner-monitor --remove-runner ideabox-runner --repo SGribanov/IdeaBox --confirm --delete-folder
+.\runner-monitor.ps1 --start-current
+.\runner-monitor.ps1 --stop-current
+.\runner-monitor.ps1 --restart-current
 ```
 
-Adding a runner configures an existing prepared runner distribution folder.
-Quote labels in PowerShell so commas stay in one argument:
+Safe cleanup:
 
 ```powershell
-runner-monitor --add-runner runner-monitor-win --project RunnerMonitor --runner-folder C:\Runners\SGribanov-RunnerMonitor\runner-monitor-win --labels "self-hosted,Windows,X64"
-runner-monitor --add-runner runner-monitor-win --project RunnerMonitor --runner-folder C:\Runners\SGribanov-RunnerMonitor\runner-monitor-win --labels "self-hosted,Windows,X64" --confirm --replace
+.\runner-monitor.ps1 --clear-repo SGribanov/DeltaG
+.\runner-monitor.ps1 --clear-current
+.\runner-monitor.ps1 --clear-idle
+.\runner-monitor.ps1 --clear-runner ideabox-runner
 ```
 
-From any project root with a GitHub `origin`, Codex can run:
+Autostart policy:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File C:\Repos\RunnerMonitor\runner-monitor.ps1 --start-current
+.\runner-monitor.ps1 --disable-autostart
+```
+
+Config:
+
+```powershell
+.\runner-monitor.ps1 --init-config
+.\runner-monitor.ps1 --init-config --overwrite-config
+.\runner-monitor.ps1 --show-config
+```
+
+Remote host profiles:
+
+```powershell
+.\runner-monitor.ps1 --configure-remote runnerbox
+.\runner-monitor.ps1 --connect-remote runnerbox
+```
+
+Runner removal is dry-run by default:
+
+```powershell
+.\runner-monitor.ps1 --remove-runner ideabox-runner --repo SGribanov/IdeaBox
+.\runner-monitor.ps1 --remove-runner ideabox-runner --repo SGribanov/IdeaBox --confirm
+.\runner-monitor.ps1 --remove-runner ideabox-runner --repo SGribanov/IdeaBox --confirm --delete-folder
+```
+
+Runner reprovisioning configures an existing prepared runner distribution
+folder. The `--project` value is a project folder name under configured
+`projectsRoot`.
+
+```powershell
+.\runner-monitor.ps1 --add-runner runner-monitor-win --project RunnerMonitor --runner-folder C:\Runners\SGribanov-RunnerMonitor\runner-monitor-win --labels "self-hosted,Windows,X64"
+.\runner-monitor.ps1 --add-runner runner-monitor-win --project RunnerMonitor --runner-folder C:\Runners\SGribanov-RunnerMonitor\runner-monitor-win --labels "self-hosted,Windows,X64" --confirm --replace
+```
+
+Install and start the runner service after configuration:
+
+```powershell
+.\runner-monitor.ps1 --add-runner runner-monitor-win --project RunnerMonitor --runner-folder C:\Runners\SGribanov-RunnerMonitor\runner-monitor-win --labels "self-hosted,Windows,X64" --confirm --replace --service
 ```
 
 ## Remote Runner Host
 
-When runners move to a dedicated machine on the network, connect to that machine
-over SSH and run RunnerMonitor there. RunnerMonitor can prompt for host settings
-and save them in the user config file, so the SSH command does not need to be
-remembered every time.
+When runners move to a dedicated machine on the network, run RunnerMonitor on
+that machine and connect to it over SSH.
 
-Configure or update a remote host:
+Configure or update a remote host profile:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File C:\Repos\RunnerMonitor\runner-monitor.ps1 --configure-remote runnerbox
+.\runner-monitor.ps1 --configure-remote runnerbox
 ```
 
 The prompt asks for:
 
-- remote name
-- SSH host or alias
-- host OS: `windows` or `linux`
-- remote RunnerMonitor path
-- default remote project path
+- remote name;
+- SSH host or alias;
+- host OS: `windows` or `linux`;
+- remote RunnerMonitor path;
+- default remote project path.
 
 Open the saved remote TUI:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File C:\Repos\RunnerMonitor\runner-monitor.ps1 --connect-remote runnerbox
+.\runner-monitor.ps1 --connect-remote runnerbox
 ```
 
-Inside the local TUI, use:
-
-```text
-connect remote runnerbox
-```
-
-The saved config lives under the current user's config directory as
-`RunnerMonitor\remote-hosts.json`.
-
-Under the hood, the saved Windows host command is equivalent to:
+Equivalent Windows SSH command:
 
 ```powershell
 ssh -t runnerbox "powershell -NoProfile -ExecutionPolicy Bypass -File C:/Repos/RunnerMonitor/runner-monitor.ps1"
@@ -195,65 +283,91 @@ CI:
 ssh runnerbox "cd C:/Repos/DeltaG; powershell -NoProfile -ExecutionPolicy Bypass -File C:/Repos/RunnerMonitor/runner-monitor.ps1 --start-current"
 ```
 
-Start a specific repository on the remote host without relying on current
-directory detection:
-
-```powershell
-ssh runnerbox "powershell -NoProfile -ExecutionPolicy Bypass -File C:/Repos/RunnerMonitor/runner-monitor.ps1 --start-repo SGribanov/DeltaG"
-```
-
-For a Linux runner host, use the same pattern with the compiled binary:
+Linux remote host example:
 
 ```powershell
 ssh -t runnerbox "cd /opt/RunnerMonitor && ./runner-monitor"
 ssh runnerbox "cd /srv/DeltaG && /opt/RunnerMonitor/runner-monitor --start-current"
 ```
 
-Optional local git hook for a repository:
+Saved remote profiles are stored separately from the app-local runner settings
+under the current user's config directory as `RunnerMonitor\remote-hosts.json`.
 
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File C:\Repos\RunnerMonitor\scripts\install-prepush-hook.ps1 -RepoPath C:\Repos\DeltaG
-```
+## Runner Folder Layout
 
-Disable runner autostart from an elevated PowerShell session:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File C:\Repos\RunnerMonitor\scripts\disable-autostart-elevated.ps1
-```
-
-Runner cleanup proposals live in `reports/`; do not execute removal commands
-without explicit runner-by-runner approval.
-
-Manual audit decisions such as known keep runners live in
-`runner-policy.json`.
-
-## Runner Folder Migration
-
-Runner folders should move into common `Runners` directories, but only
-runner-by-runner after explicit approval. The target layout is:
+The preferred current layout is:
 
 ```text
 C:\Runners\<owner>-<repo>\<runner-name>
 /home/gsv777/Runners/<owner>-<repo>/<runner-name>
 ```
 
-The migration plan lives in `tasks/issue-5-runners-directory-migration/`.
-Do not move busy runners; DeltaG Windows and WSL runners are currently deferred
-while busy.
+For a future dedicated Linux host, use a stable shared root such as:
 
-## Icon Assets
+```text
+/opt/Runners/<owner>-<repo>/<runner-name>
+/srv/Runners/<owner>-<repo>/<runner-name>
+```
 
-RunnerMonitor includes a generated hourglass icon set:
+Runner folder migration is tracked separately and should be performed
+runner-by-runner. Do not move or delete busy runners without explicit approval.
 
-- `assets/runner-monitor-hourglass.png` -- transparent 512px source.
-- `assets/runner-monitor-hourglass-spin.gif` -- animated spinning hourglass.
-- `assets/runner-monitor-hourglass.ico` -- Windows executable icon.
-- `cmd/runner-monitor/runner-monitor_windows_amd64.syso` -- Windows resource
-  linked automatically by `go build`.
+## Safety Model
 
-Regenerate the icon assets with:
+- Busy runners are protected by default.
+- Removal and reprovisioning are dry-run by default.
+- Folder deletion requires `--delete-folder` and is limited to configured safe
+  runner roots.
+- Cleanup removes safe generated content such as `_work` contents and runner
+  installer archives, while preserving runner registration and binaries.
+- `--show-config` never prints the real WSL sudo password.
+- Local app config files and secrets must not be committed.
+
+## Build And Test
+
+Run tests:
 
 ```powershell
-uv run --with pillow python scripts\generate-icon-assets.py
-go run github.com/akavel/rsrc@v0.10.2 -arch amd64 -ico assets\runner-monitor-hourglass.ico -o cmd\runner-monitor\runner-monitor_windows_amd64.syso
+go test ./...
 ```
+
+Build:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\build.ps1
+```
+
+Generate icon assets:
+
+```powershell
+uv run --with pillow python .\scripts\generate-icon-assets.py
+go run github.com/akavel/rsrc@v0.10.2 -arch amd64 -ico .\assets\runner-monitor-hourglass.ico -o .\cmd\runner-monitor\runner-monitor_windows_amd64.syso
+```
+
+## Repository Layout
+
+```text
+cmd/runner-monitor/     Application entry point
+internal/app/           Discovery, GitHub integration, lifecycle, TUI, cleanup
+scripts/                Build, migration, cleanup, and automation helpers
+assets/                 Hourglass icon assets
+reports/                Runner audit reports
+research/               Long-lived project insights
+tasks/                  Per-issue implementation plans and status files
+```
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Contributions should preserve the safety
+model: no unguarded destructive runner operations, no committed secrets, and no
+silent changes to runner registrations. Please also follow the
+[Code of Conduct](CODE_OF_CONDUCT.md).
+
+## Security
+
+See [SECURITY.md](SECURITY.md). Do not open public issues with secrets, runner
+tokens, sudo passwords, or private hostnames.
+
+## License
+
+RunnerMonitor is licensed under the [MIT License](LICENSE).

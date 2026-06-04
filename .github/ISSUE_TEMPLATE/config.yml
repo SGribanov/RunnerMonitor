@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Sensitive security report
+    url: https://github.com/SGribanov/RunnerMonitor/security/policy
+    about: Do not post secrets, tokens, passwords, or private host details in public issues.
