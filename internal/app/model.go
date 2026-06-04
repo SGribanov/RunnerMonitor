@@ -22,6 +22,7 @@ type Model struct {
 	refreshEvery  time.Duration
 	spinnerFrame  int
 	autoClearIdle bool
+	showHelp      bool
 	width         int
 	height        int
 }
@@ -141,6 +142,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyCtrlC, tea.KeyEsc:
+			if m.showHelp {
+				m.showHelp = false
+				return m, nil
+			}
 			return m, tea.Quit
 		case tea.KeyEnter:
 			if m.loading {
@@ -149,6 +154,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			command := strings.TrimSpace(m.input.Value())
 			m.input.SetValue("")
 			return m.runCommand(command)
+		}
+		if m.input.Value() == "" && (msg.String() == "h" || msg.String() == "?") {
+			m.showHelp = !m.showHelp
+			return m, nil
 		}
 		if m.input.Value() == "" && isTableNavigationKey(msg) {
 			var cmd tea.Cmd
@@ -174,6 +183,17 @@ func (m Model) View() string {
 		return b.String()
 	}
 	if m.height <= 8 {
+		if m.message != "" {
+			b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(trunc(m.message, max(20, m.width))))
+			b.WriteString("\n")
+		}
+		b.WriteString(m.input.View())
+		b.WriteString("\n")
+		return b.String()
+	}
+	if m.showHelp {
+		b.WriteString(tuiHelp(m.width, m.height))
+		b.WriteString("\n")
 		if m.message != "" {
 			b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(trunc(m.message, max(20, m.width))))
 			b.WriteString("\n")
@@ -219,6 +239,10 @@ func (m Model) runCommand(command string) (tea.Model, tea.Cmd) {
 	}
 	if command == "q" || command == "quit" || command == "exit" {
 		return m, tea.Quit
+	}
+	if command == "h" || command == "help" || command == "?" {
+		m.showHelp = !m.showHelp
+		return m, nil
 	}
 	if command == "refresh" {
 		if m.refreshing {

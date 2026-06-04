@@ -214,8 +214,52 @@ func TestCommandHelpUsesCompactTextForNarrowWidth(t *testing.T) {
 	if strings.Contains(got, "connect remote") {
 		t.Fatalf("narrow help should be compact: %q", got)
 	}
+	if !strings.Contains(got, "h help") {
+		t.Fatalf("narrow help should mention help command: %q", got)
+	}
 	if !strings.Contains(commandHelp(150), "connect remote NAME") {
 		t.Fatalf("wide help should include remote command")
+	}
+}
+
+func TestTUIHelpViewDescribesCommands(t *testing.T) {
+	model := NewModel(Inventory{Runners: []Runner{{Name: "runner-1", Repo: "SGribanov/RunnerMonitor"}}})
+	updated, _ := model.runCommand("help")
+	helped, ok := updated.(Model)
+	if !ok {
+		t.Fatalf("updated model has type %T", updated)
+	}
+	view := helped.View()
+	for _, want := range []string{"Help", "Select a runner", "refresh", "start/stop", "remove N confirm", "q, esc, ctrl+c"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("help view missing %q:\n%s", want, view)
+		}
+	}
+	if strings.Contains(view, "runner-1") {
+		t.Fatalf("help view should replace the table while open:\n%s", view)
+	}
+}
+
+func TestTUIHelpKeyTogglesHelpAndEscClosesIt(t *testing.T) {
+	model := NewModel(Inventory{Runners: []Runner{{Name: "runner-1", Repo: "SGribanov/RunnerMonitor"}}})
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'h'}})
+	helped, ok := updated.(Model)
+	if !ok {
+		t.Fatalf("updated model has type %T", updated)
+	}
+	if !helped.showHelp {
+		t.Fatalf("h should open help")
+	}
+	updated, cmd := helped.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	closed, ok := updated.(Model)
+	if !ok {
+		t.Fatalf("updated model has type %T", updated)
+	}
+	if closed.showHelp {
+		t.Fatalf("esc should close help before quitting")
+	}
+	if cmd != nil {
+		t.Fatalf("esc while help is open should not quit")
 	}
 }
 
