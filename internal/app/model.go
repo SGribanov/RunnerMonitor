@@ -12,11 +12,12 @@ import (
 )
 
 type Model struct {
-	input        textinput.Model
-	inventory    Inventory
-	message      string
-	loading      bool
-	spinnerFrame int
+	input         textinput.Model
+	inventory     Inventory
+	message       string
+	loading       bool
+	spinnerFrame  int
+	autoClearIdle bool
 }
 
 type refreshResultMsg struct {
@@ -29,6 +30,10 @@ type spinnerTickMsg time.Time
 type remoteConnectDoneMsg struct {
 	name string
 	err  error
+}
+
+type clearResultMsg struct {
+	message string
 }
 
 var hourglassFrames = []string{"⌛", "⏳"}
@@ -71,6 +76,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			m.message = "ready"
 		}
+		if m.autoClearIdle {
+			m.message = "auto-clear idle runners..."
+			return m, clearIdleRunnersCmd(m.inventory)
+		}
 		return m, nil
 	case spinnerTickMsg:
 		if !m.loading {
@@ -84,6 +93,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			m.message = fmt.Sprintf("remote %s connection closed", msg.name)
 		}
+		return m, nil
+	case clearResultMsg:
+		m.message = msg.message
 		return m, nil
 	case tea.KeyMsg:
 		switch msg.Type {
@@ -115,7 +127,7 @@ func (m Model) View() string {
 		b.WriteString("\n")
 		return b.String()
 	}
-	b.WriteString("Commands: refresh | start N | stop N | restart N | force-stop N | logs N | connect remote NAME | q\n\n")
+	b.WriteString("Commands: refresh | start N | stop N | restart N | force-stop N | clear N | clear idle | auto-clear on/off | logs N | connect remote NAME | q\n\n")
 	b.WriteString(renderTable(m.inventory.Runners))
 	b.WriteString("\n")
 	if m.message != "" {
@@ -139,6 +151,20 @@ func (m Model) runCommand(command string) (tea.Model, tea.Cmd) {
 		m.loading = true
 		m.message = "Ожидайте, идет опрос раннеров..."
 		return m, tea.Batch(refreshInventoryCmd(), spinnerTickCmd())
+	}
+	if command == "clear idle" {
+		m.message = "clearing idle runners..."
+		return m, clearIdleRunnersCmd(m.inventory)
+	}
+	if command == "auto-clear on" {
+		m.autoClearIdle = true
+		m.message = "auto-clear enabled; clearing idle runners..."
+		return m, clearIdleRunnersCmd(m.inventory)
+	}
+	if command == "auto-clear off" {
+		m.autoClearIdle = false
+		m.message = "auto-clear disabled"
+		return m, nil
 	}
 	if command == "connect remote" || strings.HasPrefix(command, "connect remote ") {
 		name := strings.TrimSpace(strings.TrimPrefix(command, "connect remote"))
@@ -172,12 +198,27 @@ func (m Model) runCommand(command string) (tea.Model, tea.Cmd) {
 	switch parts[0] {
 	case "start", "stop", "restart", "force-stop", "force-restart":
 		m.message = RunLifecycle(parts[0], runner)
+	case "clear":
+		m.message = fmt.Sprintf("clearing %s...", runner.Name)
+		return m, clearRunnerCmd(runner)
 	case "logs":
 		m.message = OpenLogs(runner)
 	default:
 		m.message = "unknown command"
 	}
 	return m, nil
+}
+
+func clearRunnerCmd(runner Runner) tea.Cmd {
+	return func() tea.Msg {
+		return clearResultMsg{message: ClearRunner(runner)}
+	}
+}
+
+func clearIdleRunnersCmd(inventory Inventory) tea.Cmd {
+	return func() tea.Msg {
+		return clearResultMsg{message: strings.TrimSpace(ClearIdleRunners(inventory))}
+	}
 }
 
 func refreshInventoryCmd() tea.Cmd {

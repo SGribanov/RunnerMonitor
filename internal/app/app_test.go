@@ -1,6 +1,8 @@
 package app
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -81,6 +83,59 @@ func TestRunLifecycleManualWindowsAlreadyRunningDoesNotSpawn(t *testing.T) {
 	want := "manual-windows already running"
 	if got != want {
 		t.Fatalf("RunLifecycle = %q, want %q", got, want)
+	}
+}
+
+func TestClearRunnerRejectsBusyRunner(t *testing.T) {
+	got := ClearRunner(Runner{Name: "busy", Busy: true, Path: t.TempDir()})
+	if got != "busy is busy; cleanup skipped" {
+		t.Fatalf("ClearRunner = %q", got)
+	}
+}
+
+func TestClearRunnerRemovesWorkContentsAndInstallerArchives(t *testing.T) {
+	root := t.TempDir()
+	work := filepath.Join(root, "_work")
+	if err := os.MkdirAll(filepath.Join(work, "repo"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(work, "repo", "file.txt"), []byte("data"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "actions-runner.zip"), []byte("zip"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, ".runner"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	got := ClearRunner(Runner{Name: "idle", Path: root, LocalState: "manual"})
+	if got != "cleared idle" {
+		t.Fatalf("ClearRunner = %q", got)
+	}
+	entries, err := os.ReadDir(work)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 0 {
+		t.Fatalf("_work should be empty, got %d entries", len(entries))
+	}
+	if _, err := os.Stat(filepath.Join(root, "actions-runner.zip")); !os.IsNotExist(err) {
+		t.Fatalf("installer archive still exists or stat failed unexpectedly: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(root, ".runner")); err != nil {
+		t.Fatalf(".runner should be preserved: %v", err)
+	}
+}
+
+func TestClearRepoRunnersFiltersByRepo(t *testing.T) {
+	root := t.TempDir()
+	got := ClearRepoRunners("SGribanov/A", Inventory{Runners: []Runner{
+		{Name: "a", Repo: "SGribanov/A", Path: root, LocalState: "manual"},
+		{Name: "b", Repo: "SGribanov/B", Path: root, LocalState: "manual"},
+	}})
+	if got != "cleared a\n" {
+		t.Fatalf("ClearRepoRunners = %q", got)
 	}
 }
 

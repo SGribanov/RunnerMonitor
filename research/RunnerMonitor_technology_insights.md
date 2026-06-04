@@ -273,3 +273,15 @@ are about 4 KB each, and `/home/gsv777/runner-backups` is about 4 KB. Manual
 Windows runners should be restarted from non-elevated project commands after
 elevated cleanup; otherwise non-elevated discovery cannot see their executable
 paths and the audit may temporarily show `manual` despite GitHub being online.
+
+## 2026-06-04 -- Safe runner cleanup command
+
+Runner cleanup should preserve registration state and runner binaries. The safe
+surface is `_work` contents plus root-level runner installer archives such as
+`actions-runner*.zip` and `actions-runner*.tar.gz`. RunnerMonitor now refuses
+cleanup when GitHub reports `busy=true`; if a runner is locally running or
+active, it stops only that runner, clears the safe targets, and restarts it.
+The TUI supports `clear N`, `clear idle`, and opt-in `auto-clear on/off`.
+Automatic cleanup is tied to refresh instead of a permanent background loop, so
+cleanup happens only after a fresh idle check and avoids silently racing new
+jobs.

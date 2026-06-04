@@ -16,16 +16,19 @@ func main() {
 	startRepo := flag.String("start-repo", "", "start service-managed runners for owner/repo")
 	stopRepo := flag.String("stop-repo", "", "stop service-managed runners for owner/repo")
 	restartRepo := flag.String("restart-repo", "", "restart service-managed runners for owner/repo")
+	clearRepo := flag.String("clear-repo", "", "clear idle runner work directories for owner/repo")
 	startCurrent := flag.Bool("start-current", false, "start service-managed runners for the current git origin repository")
 	stopCurrent := flag.Bool("stop-current", false, "stop service-managed runners for the current git origin repository")
 	restartCurrent := flag.Bool("restart-current", false, "restart service-managed runners for the current git origin repository")
+	clearCurrent := flag.Bool("clear-current", false, "clear idle runner work directories for the current git origin repository")
+	clearIdle := flag.Bool("clear-idle", false, "clear all idle runner work directories")
 	disableAutostart := flag.Bool("disable-autostart", false, "disable boot autostart for service-managed runners without stopping them")
 	configureRemote := flag.String("configure-remote", "", "prompt for SSH remote runner host settings and save them")
 	connectRemote := flag.String("connect-remote", "", "open the saved SSH remote runner host TUI")
 	flag.Parse()
 
-	needsInventory := *once || *audit || *disableAutostart || *startCurrent || *stopCurrent || *restartCurrent ||
-		*startRepo != "" || *stopRepo != "" || *restartRepo != ""
+	needsInventory := *once || *audit || *disableAutostart || *startCurrent || *stopCurrent || *restartCurrent || *clearCurrent || *clearIdle ||
+		*startRepo != "" || *stopRepo != "" || *restartRepo != "" || *clearRepo != ""
 	var inventory app.Inventory
 	if needsInventory {
 		var err error
@@ -46,7 +49,7 @@ func main() {
 		fmt.Print(app.DisableAutostart(inventory))
 		return
 	}
-	if *startCurrent || *stopCurrent || *restartCurrent {
+	if *startCurrent || *stopCurrent || *restartCurrent || *clearCurrent {
 		repo, err := app.CurrentGitHubRepo()
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "cannot detect current GitHub repo: %v\n", err)
@@ -59,7 +62,11 @@ func main() {
 		if *restartCurrent {
 			action = "restart"
 		}
-		fmt.Print(app.RunRepoLifecycle(action, repo, inventory))
+		if *clearCurrent {
+			fmt.Print(app.ClearRepoRunners(repo, inventory))
+		} else {
+			fmt.Print(app.RunRepoLifecycle(action, repo, inventory))
+		}
 		return
 	}
 	if *startRepo != "" {
@@ -72,6 +79,14 @@ func main() {
 	}
 	if *restartRepo != "" {
 		fmt.Print(app.RunRepoLifecycle("restart", *restartRepo, inventory))
+		return
+	}
+	if *clearRepo != "" {
+		fmt.Print(app.ClearRepoRunners(*clearRepo, inventory))
+		return
+	}
+	if *clearIdle {
+		fmt.Print(app.ClearIdleRunners(inventory))
 		return
 	}
 	if *configureRemote != "" {
