@@ -307,3 +307,21 @@ elevated PowerShell helper through UAC for only the selected runner. The helper
 uses `--clear-runner NAME`, keeps the elevated window open with `-NoExit`, and
 preserves the existing busy-runner and safe-target cleanup rules. WSL cleanup
 does not use this path; it continues to rely on the sudo fallback.
+
+## 2026-06-04 -- Runner removal and reprovisioning
+
+GitHub Actions runner reprovisioning should use official repository
+registration/remove tokens instead of editing `.runner` state directly. Tokens
+are fetched with `gh api -X POST repos/<owner>/<repo>/actions/runners/
+registration-token` or `remove-token`, then passed to `config.cmd`/`config.sh`
+or `config remove`. RunnerMonitor v1 makes these flows dry-run by default and
+requires `--confirm` before unregistering or configuring. Folder deletion is a
+second explicit gate with `--delete-folder` and is limited to known runner roots.
+
+The requested project selector maps a plain folder name to `C:\Repos\<Project>`
+and reads that repository's GitHub `origin`. It deliberately rejects path-like
+input (`..`, slashes, drive prefixes) so a destructive command cannot escape the
+project registry by accident. Blindly cloning existing runner folders remains a
+later milestone because current runner directories can contain auto-update
+junctions or symlinks; v1 configures an existing prepared runner distribution
+folder instead.

@@ -2,6 +2,7 @@ package app
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -154,6 +155,118 @@ func TestPowerShellQuoteEscapesSingleQuotes(t *testing.T) {
 	got := powerShellQuote("runner's")
 	if got != "'runner''s'" {
 		t.Fatalf("powerShellQuote = %q", got)
+	}
+}
+
+func TestRemoveRunnerDryRunIncludesSafePlan(t *testing.T) {
+	got := RemoveRunner(Runner{
+		Name:        "runner-1",
+		Repo:        "SGribanov/RunnerMonitor",
+		Path:        `C:\Runners\SGribanov-RunnerMonitor\runner-1`,
+		ServiceName: "actions.runner.SGribanov-RunnerMonitor.runner-1",
+	}, RemoveRunnerOptions{})
+	for _, want := range []string{
+		"dry-run remove runner-1 for SGribanov/RunnerMonitor",
+		"- unregister with GitHub remove token",
+		"run with --confirm to execute",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("RemoveRunner dry-run missing %q in:\n%s", want, got)
+		}
+	}
+}
+
+func TestRemoveRunnerRejectsBusyWithoutForce(t *testing.T) {
+	got := RemoveRunner(Runner{Name: "busy", Busy: true, Path: t.TempDir()}, RemoveRunnerOptions{Confirm: true})
+	if got != "busy is busy; removal skipped" {
+		t.Fatalf("RemoveRunner = %q", got)
+	}
+}
+
+func TestRemoveRunnerRefusesUnsafeFolderDelete(t *testing.T) {
+	got := RemoveRunner(Runner{Name: "unsafe", Path: t.TempDir()}, RemoveRunnerOptions{Confirm: true, Force: true, DeleteFolder: true})
+	if !strings.Contains(got, "folder is outside known runner roots; delete refused") {
+		t.Fatalf("RemoveRunner should refuse unsafe delete, got %q", got)
+	}
+}
+
+func TestAddRunnerRejectsConfiguredFolderWithoutReplace(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+	reposRoot := t.TempDir()
+	project := filepath.Join(reposRoot, "ProjectA")
+	if err := os.MkdirAll(project, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := exec.Command("git", "-C", project, "init").CombinedOutput(); err != nil {
+		t.Fatalf("git init failed: %v: %s", err, out)
+	}
+	if out, err := exec.Command("git", "-C", project, "remote", "add", "origin", "git@github.com:SGribanov/ProjectA.git").CombinedOutput(); err != nil {
+		t.Fatalf("git remote add failed: %v: %s", err, out)
+	}
+	oldRoot := defaultReposRoot
+	defaultReposRoot = reposRoot
+	t.Cleanup(func() { defaultReposRoot = oldRoot })
+
+	runnerFolder := t.TempDir()
+	if err := os.WriteFile(filepath.Join(runnerFolder, "config.cmd"), []byte("@echo off\r\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(runnerFolder, ".runner"), []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got := AddRunner(AddRunnerOptions{Project: "ProjectA", Name: "runner-a", RunnerFolder: runnerFolder})
+	if !strings.Contains(got, "already configured; use --replace") {
+		t.Fatalf("AddRunner should reject configured folder without replace, got %q", got)
+	}
+}
+
+func TestRemoveNamedRunnerFiltersByRepo(t *testing.T) {
+	got := RemoveNamedRunner(RemoveRunnerOptions{Name: "same", Repo: "SGribanov/B"}, Inventory{Runners: []Runner{
+		{Name: "same", Repo: "SGribanov/A", Path: `C:\Runners\SGribanov-A\same`},
+		{Name: "same", Repo: "SGribanov/B", Path: `C:\Runners\SGribanov-B\same`},
+	}})
+	if !strings.Contains(got, "dry-run remove same for SGribanov/B") {
+		t.Fatalf("RemoveNamedRunner = %q", got)
+	}
+}
+
+func TestProjectRepoFromFolderAt(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+	root := t.TempDir()
+	project := filepath.Join(root, "ProjectA")
+	if err := os.MkdirAll(project, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if out, err := exec.Command("git", "-C", project, "init").CombinedOutput(); err != nil {
+		t.Fatalf("git init failed: %v: %s", err, out)
+	}
+	if out, err := exec.Command("git", "-C", project, "remote", "add", "origin", "git@github.com:SGribanov/ProjectA.git").CombinedOutput(); err != nil {
+		t.Fatalf("git remote add failed: %v: %s", err, out)
+	}
+	got, err := ProjectRepoFromFolderAt(root, "ProjectA")
+	if err != nil {
+		t.Fatalf("ProjectRepoFromFolderAt returned error: %v", err)
+	}
+	if got != "SGribanov/ProjectA" {
+		t.Fatalf("repo = %q", got)
+	}
+}
+
+func TestProjectRepoFromFolderAtRejectsPathInput(t *testing.T) {
+	_, err := ProjectRepoFromFolderAt(t.TempDir(), `..\ProjectA`)
+	if err == nil || !strings.Contains(err.Error(), "project must be a folder name") {
+		t.Fatalf("expected folder-name error, got %v", err)
+	}
+}
+
+func TestShellQuoteEscapesSingleQuotes(t *testing.T) {
+	got := shellQuote("runner's")
+	if got != "'runner'\"'\"'s'" {
+		t.Fatalf("shellQuote = %q", got)
 	}
 }
 

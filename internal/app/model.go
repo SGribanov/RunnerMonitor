@@ -127,7 +127,7 @@ func (m Model) View() string {
 		b.WriteString("\n")
 		return b.String()
 	}
-	b.WriteString("Commands: refresh | start N | stop N | restart N | force-stop N | clear N | clear idle | auto-clear on/off | logs N | connect remote NAME | q\n\n")
+	b.WriteString("Commands: refresh | start N | stop N | restart N | force-stop N | clear N | remove N [confirm] | delete N confirm | clear idle | auto-clear on/off | logs N | connect remote NAME | q\n\n")
 	b.WriteString(renderTable(m.inventory.Runners))
 	b.WriteString("\n")
 	if m.message != "" {
@@ -183,7 +183,7 @@ func (m Model) runCommand(command string) (tea.Model, tea.Cmd) {
 	}
 
 	parts := strings.Fields(command)
-	if len(parts) != 2 {
+	if len(parts) < 2 || len(parts) > 3 {
 		m.message = "unknown command"
 		return m, nil
 	}
@@ -201,6 +201,17 @@ func (m Model) runCommand(command string) (tea.Model, tea.Cmd) {
 	case "clear":
 		m.message = fmt.Sprintf("clearing %s...", runner.Name)
 		return m, clearRunnerCmd(runner)
+	case "remove":
+		confirm := len(parts) == 3 && parts[2] == "confirm"
+		m.message = fmt.Sprintf("removing %s...", runner.Name)
+		return m, removeRunnerCmd(runner, RemoveRunnerOptions{Confirm: confirm})
+	case "delete":
+		if len(parts) != 3 || parts[2] != "confirm" {
+			m.message = "delete requires: delete N confirm"
+			return m, nil
+		}
+		m.message = fmt.Sprintf("removing %s and deleting folder...", runner.Name)
+		return m, removeRunnerCmd(runner, RemoveRunnerOptions{Confirm: true, DeleteFolder: true})
 	case "logs":
 		m.message = OpenLogs(runner)
 	default:
@@ -218,6 +229,12 @@ func clearRunnerCmd(runner Runner) tea.Cmd {
 func clearIdleRunnersCmd(inventory Inventory) tea.Cmd {
 	return func() tea.Msg {
 		return clearResultMsg{message: strings.TrimSpace(ClearIdleRunners(inventory))}
+	}
+}
+
+func removeRunnerCmd(runner Runner, options RemoveRunnerOptions) tea.Cmd {
+	return func() tea.Msg {
+		return clearResultMsg{message: RemoveRunner(runner, options)}
 	}
 }
 

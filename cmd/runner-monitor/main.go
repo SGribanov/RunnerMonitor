@@ -18,6 +18,17 @@ func main() {
 	restartRepo := flag.String("restart-repo", "", "restart service-managed runners for owner/repo")
 	clearRepo := flag.String("clear-repo", "", "clear idle runner work directories for owner/repo")
 	clearRunner := flag.String("clear-runner", "", "clear one runner by name")
+	project := flag.String("project", "", "project folder name under C:\\Repos")
+	repo := flag.String("repo", "", "GitHub owner/repo filter for runner operations")
+	removeRunner := flag.String("remove-runner", "", "remove one runner by name; dry-run unless --confirm is set")
+	addRunner := flag.String("add-runner", "", "add/configure one runner by name; dry-run unless --confirm is set")
+	runnerFolder := flag.String("runner-folder", "", "existing runner distribution folder for --add-runner")
+	labels := flag.String("labels", "", "comma-separated labels for --add-runner")
+	confirm := flag.Bool("confirm", false, "execute destructive or provisioning operation")
+	force := flag.Bool("force", false, "allow selected destructive operation to proceed past busy checks")
+	deleteFolder := flag.Bool("delete-folder", false, "delete runner folder after successful unregister")
+	replace := flag.Bool("replace", false, "pass --replace when configuring a runner")
+	service := flag.Bool("service", false, "install and start runner service after configuring")
 	startCurrent := flag.Bool("start-current", false, "start service-managed runners for the current git origin repository")
 	stopCurrent := flag.Bool("stop-current", false, "stop service-managed runners for the current git origin repository")
 	restartCurrent := flag.Bool("restart-current", false, "restart service-managed runners for the current git origin repository")
@@ -29,7 +40,7 @@ func main() {
 	flag.Parse()
 
 	needsInventory := *once || *audit || *disableAutostart || *startCurrent || *stopCurrent || *restartCurrent || *clearCurrent || *clearIdle ||
-		*startRepo != "" || *stopRepo != "" || *restartRepo != "" || *clearRepo != "" || *clearRunner != ""
+		*startRepo != "" || *stopRepo != "" || *restartRepo != "" || *clearRepo != "" || *clearRunner != "" || *removeRunner != ""
 	var inventory app.Inventory
 	if needsInventory {
 		var err error
@@ -88,6 +99,29 @@ func main() {
 	}
 	if *clearRunner != "" {
 		fmt.Print(app.ClearNamedRunner(*clearRunner, inventory))
+		return
+	}
+	if *removeRunner != "" {
+		fmt.Print(app.RemoveNamedRunner(app.RemoveRunnerOptions{
+			Name:         *removeRunner,
+			Project:      *project,
+			Repo:         *repo,
+			Confirm:      *confirm,
+			Force:        *force,
+			DeleteFolder: *deleteFolder,
+		}, inventory))
+		return
+	}
+	if *addRunner != "" {
+		fmt.Println(app.AddRunner(app.AddRunnerOptions{
+			Project:      *project,
+			Name:         *addRunner,
+			RunnerFolder: *runnerFolder,
+			Labels:       *labels,
+			Confirm:      *confirm,
+			Replace:      *replace,
+			Service:      *service,
+		}))
 		return
 	}
 	if *clearIdle {

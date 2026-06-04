@@ -105,6 +105,10 @@ func ghAPI(endpoint string) ([]byte, error) {
 	return exec.Command("gh", "api", endpoint).Output()
 }
 
+func ghAPIMethod(method string, endpoint string) ([]byte, error) {
+	return exec.Command("gh", "api", "-X", method, endpoint).Output()
+}
+
 func repoFromGitHubURL(raw string) string {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {

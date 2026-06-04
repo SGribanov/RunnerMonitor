@@ -47,6 +47,10 @@ Inside the TUI:
 - `restart 1`
 - `force-stop 1`
 - `force-restart 1`
+- `clear 1`
+- `remove 1`
+- `remove 1 confirm`
+- `delete 1 confirm`
 - `logs 1`
 - `connect remote runnerbox`
 - `q`
@@ -59,6 +63,32 @@ runner-monitor --start-repo SGribanov/DeltaG
 runner-monitor --start-current
 runner-monitor --stop-repo SGribanov/DeltaG
 runner-monitor --restart-repo SGribanov/DeltaG
+```
+
+Safe cleanup keeps runner registration and binaries intact:
+
+```powershell
+runner-monitor --clear-repo SGribanov/DeltaG
+runner-monitor --clear-current
+runner-monitor --clear-idle
+```
+
+Removal and reprovisioning are dry-run by default. The project selector is the
+folder name under `C:\Repos`, for example `RunnerMonitor` resolves
+`C:\Repos\RunnerMonitor` and reads its GitHub `origin`.
+
+```powershell
+runner-monitor --remove-runner ideabox-runner --repo SGribanov/IdeaBox
+runner-monitor --remove-runner ideabox-runner --repo SGribanov/IdeaBox --confirm
+runner-monitor --remove-runner ideabox-runner --repo SGribanov/IdeaBox --confirm --delete-folder
+```
+
+Adding a runner configures an existing prepared runner distribution folder.
+Quote labels in PowerShell so commas stay in one argument:
+
+```powershell
+runner-monitor --add-runner runner-monitor-win --project RunnerMonitor --runner-folder C:\Runners\SGribanov-RunnerMonitor\runner-monitor-win --labels "self-hosted,Windows,X64"
+runner-monitor --add-runner runner-monitor-win --project RunnerMonitor --runner-folder C:\Runners\SGribanov-RunnerMonitor\runner-monitor-win --labels "self-hosted,Windows,X64" --confirm --replace
 ```
 
 From any project root with a GitHub `origin`, Codex can run:
