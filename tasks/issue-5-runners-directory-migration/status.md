@@ -87,18 +87,43 @@
   - GitHub reports `windows-local` online and `busy=false`;
   - `runner-monitor --audit` shows AU as `keep`, `running`, and `online`;
   - from `C:\Repos\AU`, `--start-current` returns `start windows-local requested`.
+- Migrated `SGribanov/IdeaBox ideabox-runner` from
+  `C:\actions-runner-ideabox` to
+  `C:\Runners\SGribanov-IdeaBox\ideabox-runner`.
+- Migrated `SGribanov/DeltaG deltag-win` from `C:\github-runners\deltag` to
+  `C:\Runners\SGribanov-DeltaG\deltag-win`.
+- Reconfigured both Windows services to the new `RunnerService.exe` paths and
+  switched service startup to `Manual`.
+- Fixed post-move Windows service runner junctions:
+  - `IdeaBox bin` -> `C:\Runners\SGribanov-IdeaBox\ideabox-runner\bin.2.334.0`
+  - `IdeaBox externals` -> `C:\Runners\SGribanov-IdeaBox\ideabox-runner\externals.2.334.0`
+  - `DeltaG bin` -> `C:\Runners\SGribanov-DeltaG\deltag-win\bin.2.334.0`
+  - `DeltaG externals` -> `C:\Runners\SGribanov-DeltaG\deltag-win\externals.2.334.0`
+- Validation passed:
+  - both Windows service processes run from `C:\Runners`;
+  - GitHub reports `ideabox-runner` and `deltag-win` online and `busy=false`;
+  - `runner-monitor --audit` no longer shows duplicate old DeltaG runner
+    records.
+- Cleanup completed after validation:
+  - removed `C:\github-runners\deltag`;
+  - removed Windows backup archives under `C:\Runners-backup`;
+  - removed WSL backup archives under `/home/gsv777/runner-backups`;
+  - cleared Windows and WSL runner `_work` directories;
+  - removed runner installer zip/tar artifacts from runner folders;
+  - Windows `C:\Runners` size dropped from about 16.5 GB to about 2.9 GB;
+  - WSL runner `_work` directories and backup directory are down to about 4 KB.
+- Autostart state:
+  - Windows service runners are `StartMode=Manual`;
+  - WSL systemd runner units are `disabled` but currently `active`;
+  - manual Windows runners are started from project commands and remain
+    controllable by RunnerMonitor.
 
 ## Next
 
-- Continue with the next non-busy runner.
-- Windows service moves (`IdeaBox`, `DeltaG Windows`) require elevated
-  PowerShell; current shell is not elevated.
-- Attempted to disable Windows service autostart for `IdeaBox` and `DeltaG
-  Windows` with `sc.exe config ... start= demand`; both returned
-  `OpenService FAILED 5: Access is denied`.
-- Include junction/symlink retargeting after every moved runner folder.
+- No runner folder migration work remains.
+- DeltaG still has a separately documented stale GitHub queue item; local
+  runner capacity is online and not busy.
 
 ## Blockers
 
-- Windows service moves may require elevated PowerShell.
-- WSL systemd moves require sudo.
+- None for runner folder migration.

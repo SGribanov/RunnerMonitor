@@ -247,3 +247,29 @@ for both autostart changes and folder migration. In a non-elevated shell
 `OpenService FAILED 5: Access is denied`. These runners should not be moved
 until an elevated session can stop the service, update or reinstall the service
 from the new `C:\Runners` path, set startup to manual, and restart it.
+
+## 2026-06-04 -- Windows service runner migration
+
+`SGribanov/IdeaBox ideabox-runner` and `SGribanov/DeltaG deltag-win` were moved
+with elevated PowerShell. Updating only the service `binPath` to the moved
+`bin\RunnerService.exe` is sufficient when the runner registration remains
+valid and the path-sensitive `bin`/`externals` junctions are retargeted to the
+versioned directories under the new root. `IdeaBox` moved cleanly with
+`Move-Item`. `DeltaG` needed a recovery path: after a successful backup,
+`Move-Item` failed with access denied on `C:\github-runners\deltag`, so the
+folder was copied to `C:\Runners\SGribanov-DeltaG\deltag-win` with `robocopy`,
+then the service was reconfigured and started from the new path. The old
+`C:\github-runners\deltag` folder was removed only after GitHub reported the
+new service online and idle.
+
+## 2026-06-04 -- Runner folder cleanup
+
+After all runner bindings were verified online/busy=false, backup archives were
+removed from `C:\Runners-backup` and `/home/gsv777/runner-backups`. Windows and
+WSL runner `_work` directories were cleared, and installer archives inside
+runner roots were removed. Windows `C:\Runners` dropped from about 16.5 GB to
+about 2.9 GB, `C:\github-runners` was removed, WSL runner `_work` directories
+are about 4 KB each, and `/home/gsv777/runner-backups` is about 4 KB. Manual
+Windows runners should be restarted from non-elevated project commands after
+elevated cleanup; otherwise non-elevated discovery cannot see their executable
+paths and the audit may temporarily show `manual` despite GitHub being online.

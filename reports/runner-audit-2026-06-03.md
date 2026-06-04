@@ -30,6 +30,8 @@ new explicit approval naming repo, runner, host, and path.
 | `SGribanov/MyCloneOsEngine` | `mycloneosengine-windows-local` | `C:\Runners\SGribanov-MyCloneOsEngine\mycloneosengine-windows-local` | Moved from `C:\actions-runner-mycloneosengine`; backup `C:\Runners-backup\actions-runner-mycloneosengine-mycloneosengine-windows-local-2026-06-03.zip`; fixed `bin`/`externals` junctions; GitHub online. |
 | `SGribanov/DeltaG` | `deltag-linux-wsl` | `/home/gsv777/Runners/SGribanov-DeltaG/deltag-linux-wsl` | Moved from `/home/gsv777/actions-runner-deltag`; backup `/home/gsv777/runner-backups/actions-runner-deltag-deltag-linux-wsl-move-2026-06-03.tar.gz`; fixed `bin`/`externals` symlinks; systemd unit active/enabled from new path; GitHub online. |
 | `SGribanov/AU` | `windows-local` | `C:\Runners\SGribanov-AU\windows-local` | Moved from `C:\actions-runner`; backup `C:\Runners-backup\actions-runner-windows-local-move-2026-06-03.zip`; fixed `bin`/`externals` junctions; reattached GitHub runner binding; GitHub online. |
+| `SGribanov/IdeaBox` | `ideabox-runner` | `C:\Runners\SGribanov-IdeaBox\ideabox-runner` | Moved from `C:\actions-runner-ideabox`; fixed `bin`/`externals` junctions; Windows service path updated to new root; startup changed to Manual; GitHub online. |
+| `SGribanov/DeltaG` | `deltag-win` | `C:\Runners\SGribanov-DeltaG\deltag-win` | Moved from `C:\github-runners\deltag`; fixed `bin`/`externals` junctions; Windows service path updated to new root; startup changed to Manual; GitHub online. |
 
 ## Resolved Elevated Cleanup
 
@@ -43,10 +45,11 @@ then removed manually from WSL with sudo. Current WSL unit list no longer shows
 |---|---|---|---|
 | `SGribanov/AU` | `windows-local` | local Windows | Manual `run.cmd` runner is running from `C:\Runners\SGribanov-AU\windows-local`, GitHub online, and controllable by RunnerMonitor. |
 | `SGribanov/BackTester` | `backtester-runner` | local Windows | Manual `run.cmd` runner is running from `C:\Runners\SGribanov-BackTester\backtester-runner`, GitHub online, and controllable by RunnerMonitor. |
-| `SGribanov/IdeaBox` | `ideabox-runner` | local Windows | Service-managed and GitHub online. |
+| `SGribanov/IdeaBox` | `ideabox-runner` | local Windows | Service-managed from `C:\Runners\SGribanov-IdeaBox\ideabox-runner`, startup Manual, GitHub online. |
 | `SGribanov/MyCloneOsEngine` | `mycloneosengine-windows-local` | local Windows | Manual `run.cmd` runner is running from `C:\Runners\SGribanov-MyCloneOsEngine\mycloneosengine-windows-local`, GitHub online, and controllable by RunnerMonitor. |
 | `SGribanov/MyCloneOsEngine` | `mycloneosengine-linux` | WSL Ubuntu | Service-managed from `/home/gsv777/Runners/SGribanov-MyCloneOsEngine/mycloneosengine-linux`, systemd active, GitHub online. |
 | `SGribanov/DeltaG` | `deltag-linux-wsl` | WSL Ubuntu | Service-managed from `/home/gsv777/Runners/SGribanov-DeltaG/deltag-linux-wsl`, systemd active, GitHub online, and controllable by RunnerMonitor. |
+| `SGribanov/DeltaG` | `deltag-win` | local Windows | Service-managed from `C:\Runners\SGribanov-DeltaG\deltag-win`, startup Manual, GitHub online. |
 
 ## Investigate Before Any Cleanup
 
@@ -79,17 +82,20 @@ None in the latest audit.
 
 No deletion approval is pending.
 
-## Elevated Windows Service Blocker
+## Final Migration And Cleanup
 
-The remaining unmoved runner folders are Windows service-managed:
+On 2026-06-04 the remaining Windows service runners were migrated through an
+elevated helper:
 
-- `SGribanov/IdeaBox ideabox-runner` at `C:\actions-runner-ideabox`
-- `SGribanov/DeltaG deltag-win` at `C:\github-runners\deltag`
-
-Both services are currently running with `StartMode=Auto`, and GitHub reports
-both runners online/busy=false. The current shell is not elevated
-(`Administrator=False`). Attempting to disable autostart with `sc.exe config
-... start= demand` returned `OpenService FAILED 5: Access is denied` for both
-services. Moving these folders safely requires elevated PowerShell so the
-service can be stopped, reconfigured to the new `C:\Runners` path, switched to
-manual startup, and restarted.
+- `SGribanov/IdeaBox ideabox-runner` moved to
+  `C:\Runners\SGribanov-IdeaBox\ideabox-runner`.
+- `SGribanov/DeltaG deltag-win` moved to
+  `C:\Runners\SGribanov-DeltaG\deltag-win`.
+- Both Windows services now point to `RunnerService.exe` under `C:\Runners` and
+  have `StartMode=Manual`.
+- WSL systemd runner units are `active` and `disabled`.
+- After GitHub binding validation, runner backups were removed from
+  `C:\Runners-backup` and `/home/gsv777/runner-backups`.
+- Old `C:\github-runners\deltag` was removed.
+- Windows and WSL runner `_work` directories were cleared; `C:\Runners` dropped
+  from about 16.5 GB to about 2.9 GB.
