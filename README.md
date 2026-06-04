@@ -52,6 +52,21 @@ information, repository ownership, and safe lifecycle commands.
 
 ## Quick Start
 
+Download the latest ready-to-run Windows package from
+[GitHub Releases](https://github.com/SGribanov/RunnerMonitor/releases/latest):
+
+```text
+RunnerMonitor-v0.1.0-windows-x64.zip
+```
+
+Extract the ZIP and start the TUI:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\runner-monitor.ps1
+```
+
+Or build locally from source:
+
 Build the executable and create the app-local config:
 
 ```powershell

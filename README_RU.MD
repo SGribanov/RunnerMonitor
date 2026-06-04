@@ -53,6 +53,21 @@ workflow, принадлежность к проекту и безопасные
 
 ## Быстрый старт
 
+Скачайте готовый Windows-пакет из
+[GitHub Releases](https://github.com/SGribanov/RunnerMonitor/releases/latest):
+
+```text
+RunnerMonitor-v0.1.0-windows-x64.zip
+```
+
+Распакуйте ZIP и запустите TUI:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\runner-monitor.ps1
+```
+
+Или соберите из исходников локально:
+
 Собрать exe и создать локальный config рядом с exe:
 
 ```powershell
