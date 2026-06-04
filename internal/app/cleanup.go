@@ -19,6 +19,12 @@ func ClearRunner(runner Runner) string {
 	}
 
 	wasRunning := shouldStopForCleanup(runner)
+	if wasRunning && needsElevatedWindowsCleanup(runner) && !isElevatedWindowsProcess() {
+		if err := launchElevatedClearRunner(runner); err != nil {
+			return fmt.Sprintf("clear %s requires elevated PowerShell, but UAC launch failed: %v", runner.Name, err)
+		}
+		return fmt.Sprintf("clear %s requested in elevated PowerShell", runner.Name)
+	}
 	if wasRunning {
 		if err := stopRunnerForCleanup(runner); err != nil {
 			return fmt.Sprintf("clear %s failed while stopping: %v", runner.Name, err)
@@ -81,6 +87,15 @@ func ClearRepoRunners(repo string, inventory Inventory) string {
 	return b.String()
 }
 
+func ClearNamedRunner(name string, inventory Inventory) string {
+	for _, runner := range inventory.Runners {
+		if strings.EqualFold(runner.Name, name) {
+			return ClearRunner(runner) + "\n"
+		}
+	}
+	return fmt.Sprintf("no runner found named %s\n", name)
+}
+
 func stopRunnerForCleanup(runner Runner) error {
 	return controlRunnerForCleanup("stop", runner)
 }
@@ -112,6 +127,77 @@ func controlRunnerForCleanup(action string, runner Runner) error {
 	default:
 		return fmt.Errorf("unsupported control mode %q", runner.ControlMode)
 	}
+}
+
+func needsElevatedWindowsCleanup(runner Runner) bool {
+	return runtime.GOOS == "windows" && runner.ControlMode == "windows-service"
+}
+
+func isElevatedWindowsProcess() bool {
+	if runtime.GOOS != "windows" {
+		return false
+	}
+	cmd := exec.Command("net", "session")
+	return cmd.Run() == nil
+}
+
+func launchElevatedClearRunner(runner Runner) error {
+	target, args := elevatedClearRunnerTarget(runner.Name)
+	ps := fmt.Sprintf(
+		"$argsList = @(%s); Start-Process -FilePath %s -ArgumentList $argsList -Verb RunAs",
+		powerShellArray(args),
+		powerShellQuote(target),
+	)
+	cmd := exec.Command("powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", ps)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out)))
+	}
+	return nil
+}
+
+func elevatedClearRunnerTarget(runnerName string) (string, []string) {
+	if script := runnerMonitorScriptPath(); script != "" {
+		return "powershell.exe", []string{
+			"-NoExit",
+			"-NoProfile",
+			"-ExecutionPolicy",
+			"Bypass",
+			"-File",
+			script,
+			"--clear-runner",
+			runnerName,
+		}
+	}
+	return os.Args[0], []string{"--clear-runner", runnerName}
+}
+
+func runnerMonitorScriptPath() string {
+	if script := os.Getenv("RUNNER_MONITOR_SCRIPT"); script != "" {
+		if _, err := os.Stat(script); err == nil {
+			return script
+		}
+	}
+	exe, err := os.Executable()
+	if err != nil {
+		return ""
+	}
+	candidate := filepath.Join(filepath.Dir(filepath.Dir(exe)), "runner-monitor.ps1")
+	if _, err := os.Stat(candidate); err == nil {
+		return candidate
+	}
+	return ""
+}
+
+func powerShellArray(values []string) string {
+	quoted := make([]string, 0, len(values))
+	for _, value := range values {
+		quoted = append(quoted, powerShellQuote(value))
+	}
+	return strings.Join(quoted, ",")
+}
+
+func powerShellQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "''") + "'"
 }
 
 func clearRunnerFolder(runner Runner) error {

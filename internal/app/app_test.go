@@ -139,6 +139,24 @@ func TestClearRepoRunnersFiltersByRepo(t *testing.T) {
 	}
 }
 
+func TestClearNamedRunnerFiltersByName(t *testing.T) {
+	root := t.TempDir()
+	got := ClearNamedRunner("target", Inventory{Runners: []Runner{
+		{Name: "other", Path: root, LocalState: "manual"},
+		{Name: "target", Path: root, LocalState: "manual"},
+	}})
+	if got != "cleared target\n" {
+		t.Fatalf("ClearNamedRunner = %q", got)
+	}
+}
+
+func TestPowerShellQuoteEscapesSingleQuotes(t *testing.T) {
+	got := powerShellQuote("runner's")
+	if got != "'runner''s'" {
+		t.Fatalf("powerShellQuote = %q", got)
+	}
+}
+
 func TestAuditRunnerCandidateRemove(t *testing.T) {
 	decision, _ := AuditRunner(Runner{Name: "old", LocalState: "manual", GitHubStatus: "unknown"})
 	if decision != "candidate-remove" {

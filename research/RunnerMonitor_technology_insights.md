@@ -4,7 +4,7 @@
 |---|---|
 | Project | RunnerMonitor |
 | Type | technology-research |
-| Last updated | 2026-06-03 |
+| Last updated | 2026-06-04 |
 | Status | active |
 | Tags | go, bubble-tea, github-actions, wsl, windows-services |
 
@@ -297,3 +297,13 @@ errors. Passing the sudo password through stdin to `wsl.exe -- sudo -S ...`
 works reliably; WSL shell argument and stdin forwarding through `sh -c` were
 not reliable in this environment, so WSL folder cleanup uses `wsl.exe -- python3
 -c` with the runner path passed as base64.
+
+## 2026-06-04 -- Elevated Windows cleanup helper
+
+For service-managed Windows runners, a non-elevated TUI cannot safely perform
+the stop-clean-start sequence because `Stop-Service` needs administrator rights.
+RunnerMonitor now detects that case before deleting anything and opens an
+elevated PowerShell helper through UAC for only the selected runner. The helper
+uses `--clear-runner NAME`, keeps the elevated window open with `-NoExit`, and
+preserves the existing busy-runner and safe-target cleanup rules. WSL cleanup
+does not use this path; it continues to rely on the sudo fallback.

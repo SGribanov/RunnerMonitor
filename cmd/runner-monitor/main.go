@@ -17,6 +17,7 @@ func main() {
 	stopRepo := flag.String("stop-repo", "", "stop service-managed runners for owner/repo")
 	restartRepo := flag.String("restart-repo", "", "restart service-managed runners for owner/repo")
 	clearRepo := flag.String("clear-repo", "", "clear idle runner work directories for owner/repo")
+	clearRunner := flag.String("clear-runner", "", "clear one runner by name")
 	startCurrent := flag.Bool("start-current", false, "start service-managed runners for the current git origin repository")
 	stopCurrent := flag.Bool("stop-current", false, "stop service-managed runners for the current git origin repository")
 	restartCurrent := flag.Bool("restart-current", false, "restart service-managed runners for the current git origin repository")
@@ -28,7 +29,7 @@ func main() {
 	flag.Parse()
 
 	needsInventory := *once || *audit || *disableAutostart || *startCurrent || *stopCurrent || *restartCurrent || *clearCurrent || *clearIdle ||
-		*startRepo != "" || *stopRepo != "" || *restartRepo != "" || *clearRepo != ""
+		*startRepo != "" || *stopRepo != "" || *restartRepo != "" || *clearRepo != "" || *clearRunner != ""
 	var inventory app.Inventory
 	if needsInventory {
 		var err error
@@ -83,6 +84,10 @@ func main() {
 	}
 	if *clearRepo != "" {
 		fmt.Print(app.ClearRepoRunners(*clearRepo, inventory))
+		return
+	}
+	if *clearRunner != "" {
+		fmt.Print(app.ClearNamedRunner(*clearRunner, inventory))
 		return
 	}
 	if *clearIdle {
