@@ -16,6 +16,13 @@ Milestone 2: TUI commands.
 - Added local Windows runner discovery from `.runner` files and Windows services.
 - Added WSL runner discovery from `.runner` files and `.service` hints.
 - Added GitHub API status merge and queued/stale workflow counts.
+- TUI/audit tables now show an explicit `Project` column.
+- Windows manual runner processes now appear as `Local=running` while remaining `ControlMode=manual`.
+- Manual Windows `run.cmd` runners can now be started/stopped/restarted by RunnerMonitor in a hidden background process.
+- Added generated hourglass icon assets and embedded the static `.ico` into the Windows exe through a `.syso` resource.
+- TUI startup now shows animated hourglass symbols and `Ожидайте, идет опрос раннеров...` while the first runner refresh runs asynchronously.
+- Documented SSH commands for opening RunnerMonitor on a future dedicated remote runner host and starting remote project runners.
+- Added saved remote host setup via `--configure-remote NAME`, SSH connect via `--connect-remote NAME`, and TUI command `connect remote NAME`.
 - Added TUI commands: `refresh`, `start N`, `stop N`, `restart N`, `logs N`, `q`.
 - Added `--once` smoke mode.
 - Added `--audit`, `--start-repo`, `--stop-repo`, `--restart-repo`, and `--disable-autostart`.
@@ -25,12 +32,13 @@ Milestone 2: TUI commands.
 
 ## In progress
 
-- Hardening TUI lifecycle behavior and preparing commit/push.
+- Hardening DeltaG queued-job diagnostics and preparing commit/push.
 - Autostart disable requires elevated Windows/root WSL permissions.
 
 ## Next
 
-- Add any missing test coverage around command parsing/lifecycle edge cases.
+- Investigate the DeltaG stale queued workflow and label/routing.
+- Keep CLI commands machine-friendly; the loading animation is limited to interactive TUI mode.
 - Run autostart disable from elevated context or document handoff commands.
 
 ## Decisions
@@ -38,6 +46,16 @@ Milestone 2: TUI commands.
 - Use Go for a small Windows/Linux binary.
 - Use local TUI over SSH for the future dedicated runner machine.
 - Use GitHub CLI authentication for v1 instead of introducing app credentials.
+
+## Remote runner host commands
+
+```powershell
+ssh -t runnerbox "powershell -NoProfile -ExecutionPolicy Bypass -File C:/Repos/RunnerMonitor/runner-monitor.ps1"
+ssh runnerbox "cd C:/Repos/DeltaG; powershell -NoProfile -ExecutionPolicy Bypass -File C:/Repos/RunnerMonitor/runner-monitor.ps1 --start-current"
+ssh runnerbox "powershell -NoProfile -ExecutionPolicy Bypass -File C:/Repos/RunnerMonitor/runner-monitor.ps1 --start-repo SGribanov/DeltaG"
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\Repos\RunnerMonitor\runner-monitor.ps1 --configure-remote runnerbox
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\Repos\RunnerMonitor\runner-monitor.ps1 --connect-remote runnerbox
+```
 
 ## Commands
 

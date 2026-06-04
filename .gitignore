@@ -1,8 +1,44 @@
-.idea/
-.vscode/
+# Build outputs
 bin/
 dist/
+build/
+out/
 *.exe
+*.dll
+*.so
+*.dylib
 *.test
 coverage.out
+coverage.html
 
+# Local RunnerMonitor config and secrets
+runner-monitor.json
+remote-hosts.json
+*.local.json
+*.secret
+*.secrets
+.env
+.env.*
+
+# Logs and reports generated outside committed audit artifacts
+*.log
+*.tmp
+*.bak
+*.pid
+
+# Go workspace/cache artifacts
+vendor/
+go.work
+go.work.sum
+
+# Editor and OS files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# PowerShell transcripts
+PowerShell_transcript.*

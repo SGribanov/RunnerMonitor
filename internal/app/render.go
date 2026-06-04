@@ -11,8 +11,8 @@ func renderTable(runners []Runner) string {
 	}
 
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("%-3s %-10s %-24s %-28s %-9s %-10s %-7s %-11s %-20s %s\n",
-		"#", "Host", "Repo", "Runner", "Local", "GitHub", "Busy", "Queue", "Labels", "Path"))
+	b.WriteString(fmt.Sprintf("%-3s %-10s %-18s %-28s %-9s %-10s %-7s %-11s %-20s %s\n",
+		"#", "Host", "Project", "Runner", "Local", "GitHub", "Busy", "Queue", "Labels", "Path"))
 	b.WriteString(strings.Repeat("-", 150))
 	b.WriteString("\n")
 
@@ -28,7 +28,7 @@ func renderTable(runners []Runner) string {
 		b.WriteString(fmt.Sprintf("%-3d %-10s %-24s %-28s %-9s %-10s %-7s %-11s %-20s %s\n",
 			i+1,
 			trunc(r.Host, 10),
-			trunc(r.Repo, 24),
+			trunc(projectName(r.Repo), 18),
 			trunc(r.Name, 28),
 			trunc(r.LocalState, 9),
 			trunc(r.GitHubStatus, 10),
@@ -50,14 +50,15 @@ func RenderAudit(inventory Inventory) string {
 		return "No runners discovered.\n"
 	}
 
+	policy := LoadAuditPolicy()
 	var b strings.Builder
-	b.WriteString(fmt.Sprintf("%-3s %-17s %-24s %-28s %-9s %-10s %-7s %-11s %s\n",
-		"#", "Decision", "Repo", "Runner", "Local", "GitHub", "Busy", "Queue", "Evidence"))
+	b.WriteString(fmt.Sprintf("%-3s %-17s %-18s %-28s %-9s %-10s %-7s %-11s %s\n",
+		"#", "Decision", "Project", "Runner", "Local", "GitHub", "Busy", "Queue", "Evidence"))
 	b.WriteString(strings.Repeat("-", 150))
 	b.WriteString("\n")
 
 	for i, r := range inventory.Runners {
-		decision, evidence := AuditRunner(r)
+		decision, evidence := AuditRunnerWithPolicy(r, policy)
 		busy := "false"
 		if r.Busy {
 			busy = "true"
@@ -69,7 +70,7 @@ func RenderAudit(inventory Inventory) string {
 		b.WriteString(fmt.Sprintf("%-3d %-17s %-24s %-28s %-9s %-10s %-7s %-11s %s\n",
 			i+1,
 			trunc(decision, 17),
-			trunc(r.Repo, 24),
+			trunc(projectName(r.Repo), 18),
 			trunc(r.Name, 28),
 			trunc(r.LocalState, 9),
 			trunc(r.GitHubStatus, 10),
@@ -89,4 +90,12 @@ func trunc(value string, width int) string {
 		return value[:width]
 	}
 	return value[:width-1] + "…"
+}
+
+func projectName(repo string) string {
+	parts := strings.Split(repo, "/")
+	if len(parts) == 0 {
+		return repo
+	}
+	return parts[len(parts)-1]
 }

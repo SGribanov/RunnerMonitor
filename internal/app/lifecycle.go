@@ -20,6 +20,21 @@ func RunLifecycle(action string, runner Runner) string {
 	if runner.Busy && !force && (action == "stop" || action == "restart") {
 		return fmt.Sprintf("%s is busy; use force-%s to override", runner.Name, action)
 	}
+	if action == "start" && isAlreadyRunning(runner.LocalState) {
+		return fmt.Sprintf("%s already running", runner.Name)
+	}
+	if runner.ControlMode == "manual" && runner.Transport == "windows" {
+		if runtime.GOOS != "windows" {
+			return "manual Windows runner control is only available on Windows"
+		}
+		if runner.Path == "" {
+			return fmt.Sprintf("%s path is unknown; cannot %s", runner.Name, action)
+		}
+		if err := runWindowsManualRunner(action, runner.Path); err != nil {
+			return fmt.Sprintf("%s %s failed: %v", action, runner.Name, err)
+		}
+		return fmt.Sprintf("%s %s requested", action, runner.Name)
+	}
 	if runner.ServiceName == "" {
 		return fmt.Sprintf("%s is not service-managed; cannot %s", runner.Name, action)
 	}
@@ -58,15 +73,15 @@ func RunRepoLifecycle(action string, repo string, inventory Inventory) string {
 		if !strings.EqualFold(runner.Repo, repo) {
 			continue
 		}
-		if runner.ServiceName == "" {
-			fmt.Fprintf(&b, "skip %s: not service-managed\n", runner.Name)
+		if runner.ServiceName == "" && !(runner.ControlMode == "manual" && runner.Transport == "windows") {
+			fmt.Fprintf(&b, "skip %s: not controllable\n", runner.Name)
 			continue
 		}
 		count++
 		fmt.Fprintf(&b, "%s\n", RunLifecycle(action, runner))
 	}
 	if count == 0 {
-		fmt.Fprintf(&b, "no service-managed runners found for %s\n", repo)
+		fmt.Fprintf(&b, "no controllable runners found for %s\n", repo)
 	}
 	return b.String()
 }
@@ -109,4 +124,9 @@ func runCommandWithOutput(name string, args ...string) error {
 		return fmt.Errorf("%w: %s", err, strings.TrimSpace(string(out)))
 	}
 	return nil
+}
+
+func isAlreadyRunning(state string) bool {
+	state = strings.ToLower(strings.TrimSpace(state))
+	return state == "running" || state == "active"
 }

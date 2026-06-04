@@ -13,19 +13,24 @@ import (
 func DiscoverLocal() ([]Runner, error) {
 	var warnings []error
 	var runners []Runner
+	settings := effectiveSettings()
 
 	if runtime.GOOS == "windows" {
 		services, err := discoverWindowsServices()
 		if err != nil {
 			warnings = append(warnings, err)
 		}
-		windows, err := discoverWindowsRunnerDirs(services)
+		processes, err := discoverWindowsRunnerProcesses()
+		if err != nil {
+			warnings = append(warnings, err)
+		}
+		windows, err := discoverWindowsRunnerDirs(services, processes, settings.WindowsRunnerRoots)
 		if err != nil {
 			warnings = append(warnings, err)
 		}
 		runners = append(runners, windows...)
 
-		wsl, err := discoverWSLRunners()
+		wsl, err := discoverWSLRunners(settings.WSLRunnerRoots)
 		if err != nil {
 			warnings = append(warnings, err)
 		}
@@ -33,7 +38,7 @@ func DiscoverLocal() ([]Runner, error) {
 	}
 
 	if runtime.GOOS != "windows" {
-		linux, err := discoverLinuxRunnerDirs([]string{"/opt", "/srv", os.Getenv("HOME")})
+		linux, err := discoverLinuxRunnerDirs(settings.LinuxRunnerRoots)
 		if err != nil {
 			warnings = append(warnings, err)
 		}

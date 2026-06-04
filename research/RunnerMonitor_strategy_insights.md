@@ -4,7 +4,7 @@
 |---|---|
 | Project | RunnerMonitor |
 | Type | strategy-research |
-| Last updated | 2026-06-03 |
+| Last updated | 2026-06-04 |
 | Status | active |
 | Tags | ci-runners, github-actions, tui, operations |
 
@@ -23,6 +23,19 @@ operator machine and controls the future dedicated runner host remotely. This
 keeps v1 lightweight and avoids introducing a daemon before OneDev migration
 requirements are known.
 
+The operator-facing command shape is explicit SSH into the runner host. Open
+the remote TUI with:
+
+```powershell
+ssh -t runnerbox "powershell -NoProfile -ExecutionPolicy Bypass -File C:/Repos/RunnerMonitor/runner-monitor.ps1"
+```
+
+Start runners for a remote project before CI work with:
+
+```powershell
+ssh runnerbox "cd C:/Repos/DeltaG; powershell -NoProfile -ExecutionPolicy Bypass -File C:/Repos/RunnerMonitor/runner-monitor.ps1 --start-current"
+```
+
 ## 2026-06-03 -- Runner cleanup policy
 
 Runner cleanup must be evidence-driven and explicit. The app should classify
@@ -30,8 +43,85 @@ runners as `keep`, `investigate`, or `candidate-remove`, but actual deletion of
 services, GitHub registrations, or folders requires separate approval for each
 runner.
 
+## 2026-06-04 -- GitHub-facing documentation posture
+
+RunnerMonitor should present itself on GitHub as an operator safety tool, not as
+a generic CI dashboard. The main README is English-first for GitHub visibility,
+while `README_RU.MD` keeps the same operator guidance in Russian for the local
+working context. The documentation should emphasize purpose, current stack,
+quick start, command reference, remote-runner topology, and safety gates around
+cleanup/removal/reprovisioning.
+
+## 2026-06-03 -- First cleanup candidates
+
+The first audit identifies four candidate removals: AU `windows-local`, NewGen
+Windows `newgenosengine-windows-local`, MyClone Linux `mycloneosengine-linux`,
+and NewGen WSL `newgen-wsl-linux`. DeltaG runners stay under `investigate`
+because the repository currently has a stale queued workflow, so label/routing
+must be checked before removing anything.
+
+## 2026-06-03 -- First approved removal
+
+`legion-ubuntu-wsl-x64` was explicitly approved for deletion and removed from
+`/home/gsv777/actions-runner-linux-x64` after creating backup
+`/home/gsv777/runner-backups/actions-runner-linux-x64-legion-ubuntu-wsl-x64-2026-06-03.tar.gz`.
+Post-removal audit no longer lists that runner.
+
+## 2026-06-03 -- Second approved removal
+
+`legion-windows-x64` was explicitly approved for deletion. The GitHub runner
+registration id `21` was deleted from `SGribanov/DeltaG`; local folder
+`C:\actions-runner-win-x64` was backed up to
+`C:\Runners-backup\actions-runner-win-x64-legion-windows-x64-2026-06-03.zip`
+and removed. Post-removal audit no longer lists that runner.
+
+## 2026-06-03 -- Third approved removal
+
+`newgenosengine-windows-local` was explicitly approved for deletion and removed
+from `C:\actions-runner-newgenosengine` after backup
+`C:\Runners-backup\actions-runner-newgenosengine-windows-local-2026-06-03.zip`.
+GitHub API already showed zero active runners for `SGribanov/NewGenOsEngine`.
+Post-removal audit no longer lists that runner.
+
+## 2026-06-03 -- Fourth approved removal
+
+`newgen-wsl-linux` was explicitly approved for deletion and removed from
+`/home/gsv777/newgen-runner` after backup
+`/home/gsv777/runner-backups/newgen-runner-newgen-wsl-linux-2026-06-03.tar.gz`.
+GitHub API already showed zero active runners for `SGribanov/NewGenOsEngine`.
+Post-removal audit no longer lists that runner.
+
+## 2026-06-03 -- WSL unit cleanup completed
+
+The stale `actions.runner.SGribanov-NewGenOsEngine.newgen-wsl-linux.service`
+unit was manually removed from WSL with sudo. Current WSL unit inventory only
+shows the remaining DeltaG WSL runner service.
+
+## 2026-06-03 -- AU keep and MyClone reattach
+
+`SGribanov/AU windows-local` is no longer a removal candidate because AU work
+will continue. `mycloneosengine-linux` was reattached to `SGribanov/MyCloneOsEngine`,
+installed as a WSL systemd service, and verified online in GitHub. The cleanup
+audit now has no `candidate-remove` rows.
+
 ## 2026-06-03 -- Manual startup policy
 
 Runners should not auto-start at boot. The desired workflow is for Codex or the
 operator to start only the required project runner with a short command such as
 `runner-monitor --start-repo SGribanov/DeltaG`.
+
+## 2026-06-03 -- Current-project startup command
+
+The preferred Codex workflow is even simpler than passing an explicit repo:
+from any project root, run `runner-monitor --start-current`. The command
+derives `owner/repo` from `git remote get-url origin`, which avoids hard-coding
+repo names in per-project instructions.
+
+## 2026-06-03 -- Runner folder migration timing
+
+It is time to prepare migration into common `Runners` directories, but not to
+move everything in one batch. The safe product decision is a separate migration
+phase with one explicit approval per runner. Target layouts are
+`C:\Runners\<owner>-<repo>\<runner-name>` on Windows and
+`/home/gsv777/Runners/<owner>-<repo>/<runner-name>` on current WSL. Busy runners
+such as current DeltaG Windows/WSL are deferred until idle.

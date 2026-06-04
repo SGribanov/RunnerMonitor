@@ -11,11 +11,17 @@ Tasks:
 - [x] Add `--start-repo owner/repo`.
 - [x] Add `--stop-repo owner/repo`.
 - [x] Add `--restart-repo owner/repo`.
+- [x] Add `--start-current`, `--stop-current`, and `--restart-current`.
+- [x] Add PowerShell wrapper that builds the binary on first use.
+- [x] Add parent `C:\Repos\AGENTS.md` policy for Codex startup.
+- [x] Add elevated autostart-disable script.
+- [x] Add optional per-repo pre-push hook installer.
 - [x] Skip manual runners clearly.
 
 Validation:
 - `go test ./...`
 - `go run ./cmd/runner-monitor --start-repo SGribanov/NoSuchRepo`
+- `powershell -NoProfile -ExecutionPolicy Bypass -File C:\Repos\RunnerMonitor\runner-monitor.ps1 --start-current`
 
 ## Milestone 2: Disable boot autostart
 
@@ -37,8 +43,13 @@ wsl.exe sudo systemctl disable actions.runner.SGribanov-DeltaG.deltag-linux-wsl.
 wsl.exe sudo systemctl disable actions.runner.SGribanov-NewGenOsEngine.newgen-wsl-linux.service
 ```
 
+Or run:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File C:\Repos\RunnerMonitor\scripts\disable-autostart-elevated.ps1
+```
+
 ## WSL background rule
 
 Use `systemd` units for WSL runners. Do not rely on a visible terminal window.
 `runner-monitor --start-repo ...` starts the unit in the background.
-
