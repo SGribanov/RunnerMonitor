@@ -345,3 +345,15 @@ replace the table surface with `bubbles/table`, using `tea.WindowSizeMsg` to
 track terminal dimensions and recompute columns. If the command/status area
 needs scrolling, `bubbles/viewport` should own that bounded region. This keeps
 the app lightweight while making resize behavior deterministic.
+
+## 2026-06-04 -- Resize-aware TUI implementation
+
+RunnerMonitor now keeps the non-interactive `--once` output as the existing
+plain text table, but the interactive Bubble Tea model owns a `bubbles/table`
+component. The model records terminal width/height from `tea.WindowSizeMsg`,
+recomputes table columns and height on resize, and keeps the command input
+width within the terminal. Wide terminals give more space to project, runner,
+labels, and path; narrow terminals hide low-priority columns and shrink
+remaining columns instead of letting rows drift. Existing numeric commands still
+work, and commands such as `start`, `stop`, `clear`, and `logs` can now target
+the selected row when no number is provided.

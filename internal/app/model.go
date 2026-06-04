@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/bubbles/table"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -13,11 +14,14 @@ import (
 
 type Model struct {
 	input         textinput.Model
+	table         table.Model
 	inventory     Inventory
 	message       string
 	loading       bool
 	spinnerFrame  int
 	autoClearIdle bool
+	width         int
+	height        int
 }
 
 type refreshResultMsg struct {
@@ -45,11 +49,16 @@ func NewModel(inventory Inventory) Model {
 	input.CharLimit = 120
 	input.Width = 80
 
-	return Model{
+	model := Model{
 		input:     input,
 		inventory: inventory,
 		message:   "ready",
+		width:     120,
+		height:    30,
 	}
+	model.table = newRunnerTable(inventory.Runners, model.width, tableHeight(model.height))
+	model.resize(model.width, model.height)
+	return model
 }
 
 func NewLoadingModel() Model {
@@ -68,8 +77,12 @@ func (m Model) Init() tea.Cmd {
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.resize(msg.Width, msg.Height)
+		return m, nil
 	case refreshResultMsg:
 		m.inventory = msg.inventory
+		m.syncTable()
 		m.loading = false
 		if msg.err != nil {
 			m.message = fmt.Sprintf("refresh completed with warnings: %v", msg.err)
@@ -109,6 +122,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.input.SetValue("")
 			return m.runCommand(command)
 		}
+		if m.input.Value() == "" && isTableNavigationKey(msg) {
+			var cmd tea.Cmd
+			m.table, cmd = m.table.Update(msg)
+			return m, cmd
+		}
 	}
 
 	var cmd tea.Cmd
@@ -127,17 +145,35 @@ func (m Model) View() string {
 		b.WriteString("\n")
 		return b.String()
 	}
-	b.WriteString("Commands: refresh | start N | stop N | restart N | force-stop N | clear N | remove N [confirm] | delete N confirm | clear idle | auto-clear on/off | logs N | connect remote NAME | q\n\n")
-	b.WriteString(renderTable(m.inventory.Runners))
+	b.WriteString(commandHelp(m.width))
+	b.WriteString("\n\n")
+	b.WriteString(m.table.View())
 	b.WriteString("\n")
 	if m.message != "" {
-		b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(m.message))
+		b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(trunc(m.message, max(20, m.width))))
 		b.WriteString("\n")
 	}
-	b.WriteString("> ")
 	b.WriteString(m.input.View())
 	b.WriteString("\n")
 	return b.String()
+}
+
+func (m *Model) resize(width, height int) {
+	m.width = max(width, 60)
+	m.height = max(height, 12)
+	m.input.Width = max(20, m.width-2)
+	m.syncTable()
+}
+
+func (m *Model) syncTable() {
+	if len(m.table.Columns()) == 0 {
+		m.table = newRunnerTable(m.inventory.Runners, m.width, tableHeight(m.height))
+		return
+	}
+	m.table.SetColumns(runnerTableColumns(m.width))
+	m.table.SetRows(runnerTableRows(m.inventory.Runners))
+	m.table.SetWidth(m.width)
+	m.table.SetHeight(tableHeight(m.height))
 }
 
 func (m Model) runCommand(command string) (tea.Model, tea.Cmd) {
@@ -183,41 +219,93 @@ func (m Model) runCommand(command string) (tea.Model, tea.Cmd) {
 	}
 
 	parts := strings.Fields(command)
-	if len(parts) < 2 || len(parts) > 3 {
+	if len(parts) < 1 || len(parts) > 3 {
 		m.message = "unknown command"
 		return m, nil
 	}
 
-	index, err := strconv.Atoi(parts[1])
-	if err != nil || index < 1 || index > len(m.inventory.Runners) {
-		m.message = "invalid runner number"
-		return m, nil
-	}
-
-	runner := m.inventory.Runners[index-1]
 	switch parts[0] {
 	case "start", "stop", "restart", "force-stop", "force-restart":
+		runner, ok := m.commandRunner(parts)
+		if !ok {
+			return m, nil
+		}
 		m.message = RunLifecycle(parts[0], runner)
 	case "clear":
+		runner, ok := m.commandRunner(parts)
+		if !ok {
+			return m, nil
+		}
 		m.message = fmt.Sprintf("clearing %s...", runner.Name)
 		return m, clearRunnerCmd(runner)
 	case "remove":
-		confirm := len(parts) == 3 && parts[2] == "confirm"
+		runner, ok := m.commandRunner(parts)
+		if !ok {
+			return m, nil
+		}
+		confirm := commandHasConfirm(parts)
 		m.message = fmt.Sprintf("removing %s...", runner.Name)
 		return m, removeRunnerCmd(runner, RemoveRunnerOptions{Confirm: confirm})
 	case "delete":
-		if len(parts) != 3 || parts[2] != "confirm" {
-			m.message = "delete requires: delete N confirm"
+		runner, ok := m.commandRunner(parts)
+		if !ok {
+			return m, nil
+		}
+		if !commandHasConfirm(parts) {
+			m.message = "delete requires: delete [N] confirm"
 			return m, nil
 		}
 		m.message = fmt.Sprintf("removing %s and deleting folder...", runner.Name)
 		return m, removeRunnerCmd(runner, RemoveRunnerOptions{Confirm: true, DeleteFolder: true})
 	case "logs":
+		runner, ok := m.commandRunner(parts)
+		if !ok {
+			return m, nil
+		}
 		m.message = OpenLogs(runner)
 	default:
 		m.message = "unknown command"
 	}
 	return m, nil
+}
+
+func (m *Model) commandRunner(parts []string) (Runner, bool) {
+	index, err := commandRunnerIndex(parts, m.table.Cursor(), len(m.inventory.Runners))
+	if err != nil {
+		m.message = err.Error()
+		return Runner{}, false
+	}
+	return m.inventory.Runners[index], true
+}
+
+func commandRunnerIndex(parts []string, selected int, runnerCount int) (int, error) {
+	if runnerCount == 0 {
+		return 0, fmt.Errorf("no runners available")
+	}
+	if len(parts) >= 2 && parts[1] != "confirm" {
+		index, err := strconv.Atoi(parts[1])
+		if err != nil || index < 1 || index > runnerCount {
+			return 0, fmt.Errorf("invalid runner number")
+		}
+		return index - 1, nil
+	}
+	if selected >= 0 && selected < runnerCount {
+		return selected, nil
+	}
+	return 0, fmt.Errorf("invalid runner number")
+}
+
+func commandHasConfirm(parts []string) bool {
+	return len(parts) >= 2 && parts[len(parts)-1] == "confirm"
+}
+
+func isTableNavigationKey(msg tea.KeyMsg) bool {
+	switch msg.String() {
+	case "up", "down", "k", "j", "pgup", "pgdown", "home", "end", "g", "G", " ", "b", "f", "u", "d", "ctrl+u", "ctrl+d":
+		return true
+	default:
+		return false
+	}
 }
 
 func clearRunnerCmd(runner Runner) tea.Cmd {

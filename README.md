@@ -86,18 +86,22 @@ go run ./cmd/runner-monitor --connect-remote runnerbox
 Inside the TUI:
 
 - `refresh`
-- `start 1`
-- `stop 1`
-- `restart 1`
-- `force-stop 1`
-- `force-restart 1`
-- `clear 1`
-- `remove 1`
-- `remove 1 confirm`
-- `delete 1 confirm`
-- `logs 1`
+- arrow keys select a runner
+- `start [N]`
+- `stop [N]`
+- `restart [N]`
+- `force-stop [N]`
+- `force-restart [N]`
+- `clear [N]`
+- `remove [N]`
+- `remove [N] confirm`
+- `delete [N] confirm`
+- `logs [N]`
 - `connect remote runnerbox`
 - `q`
+
+Commands with `[N]` can use either a runner number or the currently selected
+runner row.
 
 Codex/operator automation can start runners for a project without opening the
 TUI:

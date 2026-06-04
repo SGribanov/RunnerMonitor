@@ -6,6 +6,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/charmbracelet/bubbles/table"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 func TestParseRunnerConfigWithBOM(t *testing.T) {
@@ -49,12 +52,119 @@ func TestLoadingModelShowsWaitMessageBeforeTable(t *testing.T) {
 	}
 }
 
+func TestRunnerTableColumnsFitNarrowWidth(t *testing.T) {
+	columns := runnerTableColumns(60)
+	if len(columns) == 0 {
+		t.Fatalf("runnerTableColumns returned no columns")
+	}
+	for _, column := range columns {
+		if column.Width < 0 {
+			t.Fatalf("column %q has invalid width %d", column.Title, column.Width)
+		}
+	}
+	if columnWidth(columns, "Project") <= 0 || columnWidth(columns, "Runner") <= 0 {
+		t.Fatalf("project and runner columns must remain visible: %#v", columns)
+	}
+	if got := tableRenderWidth(columns); got > 60 {
+		t.Fatalf("columns exceed narrow width: %d", got)
+	}
+}
+
+func TestRunnerTableColumnsUseExtraWidth(t *testing.T) {
+	narrow := runnerTableColumns(80)
+	wide := runnerTableColumns(150)
+	if columnWidth(wide, "Path") <= columnWidth(narrow, "Path") {
+		t.Fatalf("wide path column should grow: narrow=%d wide=%d", columnWidth(narrow, "Path"), columnWidth(wide, "Path"))
+	}
+	if columnWidth(wide, "Runner") <= columnWidth(narrow, "Runner") {
+		t.Fatalf("wide runner column should grow: narrow=%d wide=%d", columnWidth(narrow, "Runner"), columnWidth(wide, "Runner"))
+	}
+}
+
+func TestModelWindowSizeMessageResizesTableAndInput(t *testing.T) {
+	model := NewModel(Inventory{Runners: []Runner{{Name: "runner-1", Repo: "SGribanov/RunnerMonitor"}}})
+	updated, _ := model.Update(tea.WindowSizeMsg{Width: 72, Height: 18})
+	resized, ok := updated.(Model)
+	if !ok {
+		t.Fatalf("updated model has type %T", updated)
+	}
+	if resized.width != 72 || resized.height != 18 {
+		t.Fatalf("size = %dx%d", resized.width, resized.height)
+	}
+	if resized.input.Width != 70 {
+		t.Fatalf("input width = %d", resized.input.Width)
+	}
+	if resized.table.Width() != 72 || resized.table.Height() != tableHeight(18)-1 {
+		t.Fatalf("table size = %dx%d", resized.table.Width(), resized.table.Height())
+	}
+}
+
+func TestRunnerTableRowsIncludeProjectAndQueue(t *testing.T) {
+	rows := runnerTableRows([]Runner{{
+		Name:            "runner-1",
+		Repo:            "SGribanov/RunnerMonitor",
+		Host:            "local",
+		LocalState:      "running",
+		GitHubStatus:    "online",
+		Busy:            true,
+		QueueCount:      2,
+		StaleQueueCount: 1,
+		Labels:          []string{"self-hosted", "Windows"},
+		Path:            `C:\Runners\SGribanov-RunnerMonitor\runner-1`,
+	}})
+	if len(rows) != 1 {
+		t.Fatalf("rows = %d", len(rows))
+	}
+	if rows[0][2] != "RunnerMonitor" {
+		t.Fatalf("project column = %q", rows[0][2])
+	}
+	if rows[0][6] != "true" || rows[0][7] != "2/1 stale" {
+		t.Fatalf("busy/queue columns = %q/%q", rows[0][6], rows[0][7])
+	}
+}
+
+func TestCommandHelpUsesCompactTextForNarrowWidth(t *testing.T) {
+	got := commandHelp(70)
+	if strings.Contains(got, "connect remote") {
+		t.Fatalf("narrow help should be compact: %q", got)
+	}
+	if !strings.Contains(commandHelp(150), "connect remote NAME") {
+		t.Fatalf("wide help should include remote command")
+	}
+}
+
+func TestCommandRunnerIndexUsesSelectionWhenNumberMissing(t *testing.T) {
+	got, err := commandRunnerIndex([]string{"start"}, 1, 3)
+	if err != nil {
+		t.Fatalf("commandRunnerIndex returned error: %v", err)
+	}
+	if got != 1 {
+		t.Fatalf("selected index = %d", got)
+	}
+	numbered, err := commandRunnerIndex([]string{"start", "3"}, 1, 3)
+	if err != nil {
+		t.Fatalf("commandRunnerIndex numbered returned error: %v", err)
+	}
+	if numbered != 2 {
+		t.Fatalf("numbered index = %d", numbered)
+	}
+}
+
 func TestRunLifecycleRejectsManualRunner(t *testing.T) {
 	got := RunLifecycle("start", Runner{Name: "manual-runner"})
 	want := "manual-runner is not service-managed; cannot start"
 	if got != want {
 		t.Fatalf("RunLifecycle = %q, want %q", got, want)
 	}
+}
+
+func columnWidth(columns []table.Column, title string) int {
+	for _, column := range columns {
+		if column.Title == title {
+			return column.Width
+		}
+	}
+	return 0
 }
 
 func TestRunLifecycleProtectsBusyRunner(t *testing.T) {
