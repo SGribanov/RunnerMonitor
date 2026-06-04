@@ -62,7 +62,7 @@ Download the latest ready-to-run Windows package from
 [GitHub Releases](https://github.com/SGribanov/RunnerMonitor/releases/latest):
 
 ```text
-RunnerMonitor-v0.3.0-windows-x64.zip
+RunnerMonitor-v0.3.1-windows-x64.zip
 ```
 
 Extract the ZIP and start the TUI:

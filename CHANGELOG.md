@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1] - 2026-06-04
+
+### Fixed
+
+- Windows runner discovery PowerShell calls now have a timeout, preventing a
+  stuck CIM query from keeping the TUI launch window alive after exit.
+
 ## [0.3.0] - 2026-06-04
 
 ### Added
@@ -71,6 +78,7 @@
 - Release ZIP includes only a sanitized default config with an empty
   `wslSudoPassword`.
 
+[0.3.1]: https://github.com/SGribanov/RunnerMonitor/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/SGribanov/RunnerMonitor/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/SGribanov/RunnerMonitor/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/SGribanov/RunnerMonitor/compare/v0.1.0...v0.2.0

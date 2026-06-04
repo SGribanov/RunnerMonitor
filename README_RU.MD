@@ -63,7 +63,7 @@ workflow, принадлежность к проекту и безопасные
 [GitHub Releases](https://github.com/SGribanov/RunnerMonitor/releases/latest):
 
 ```text
-RunnerMonitor-v0.3.0-windows-x64.zip
+RunnerMonitor-v0.3.1-windows-x64.zip
 ```
 
 Распакуйте ZIP и запустите TUI:
