@@ -58,7 +58,7 @@ Download the latest ready-to-run Windows package from
 [GitHub Releases](https://github.com/SGribanov/RunnerMonitor/releases/latest):
 
 ```text
-RunnerMonitor-v0.1.0-windows-x64.zip
+RunnerMonitor-v0.2.0-windows-x64.zip
 ```
 
 Extract the ZIP and start the TUI:
@@ -167,8 +167,13 @@ Runner information auto-refreshes every 5 seconds by default. Change
 interval. The `refresh` command starts an immediate refresh; when existing data
 is available, the table stays visible until the new data arrives.
 
+Press `h` or `?`, or type `help`, to open the in-app help panel. It gives a
+short command reference without leaving the TUI. `Esc` closes help first; when
+help is closed, `Esc` exits the TUI.
+
 | Command | Description |
 |---|---|
+| `h`, `?`, `help` | Show or hide the in-app help panel. |
 | `refresh` | Refresh local and GitHub runner state immediately. |
 | Arrow keys | Select a runner row. |
 | `start [N]` | Start runner `N`, or the selected runner if `N` is omitted. |

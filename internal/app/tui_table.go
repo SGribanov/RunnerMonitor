@@ -101,9 +101,9 @@ func tableHeight(windowHeight int) int {
 }
 
 func commandHelp(width int) string {
-	long := "Commands: refresh | start [N] | stop [N] | restart [N] | force-stop [N] | clear [N] | remove [N] [confirm] | delete [N] confirm | clear idle | auto-clear on/off | logs [N] | connect remote NAME | q"
-	short := "Commands: refresh | start/stop/restart/clear/logs [N] | remove/delete [N] confirm | connect remote NAME | q"
-	tiny := "Commands: refresh | start/stop/clear/logs [N] | q"
+	long := "Commands: h/? help | refresh | start [N] | stop [N] | restart [N] | force-stop [N] | clear [N] | remove [N] [confirm] | delete [N] confirm | clear idle | auto-clear on/off | logs [N] | connect remote NAME | q"
+	short := "Commands: h/? help | refresh | start/stop/restart/clear/logs [N] | remove/delete [N] confirm | connect remote NAME | q"
+	tiny := "Commands: h help | refresh | start/stop/clear/logs [N] | q"
 	if width < 100 {
 		return tiny
 	}
@@ -111,6 +111,52 @@ func commandHelp(width int) string {
 		return short
 	}
 	return long
+}
+
+func tuiHelp(width int, height int) string {
+	lines := []string{
+		"Help",
+		"Select a runner with ↑/↓ or type a runner number as N. Commands without N use the selected row.",
+		"",
+		"h, ?, help        show or hide this help",
+		"refresh           refresh local and GitHub runner state",
+		"start/stop N      start or stop a controllable runner",
+		"restart N         restart a controllable runner",
+		"force-stop N      stop a busy runner when you intentionally override the busy check",
+		"force-restart N   restart a busy runner when you intentionally override the busy check",
+		"clear N           clear an idle runner _work directory and installer archives",
+		"clear idle        clear all idle runners",
+		"auto-clear on/off clear idle runners after each refresh, or disable it",
+		"logs N            open the runner logs folder",
+		"remove N confirm  unregister a runner; dry-run without confirm",
+		"delete N confirm  unregister a runner and delete its folder when it is under a safe root",
+		"connect remote NAME open a saved remote host TUI over SSH",
+		"q, esc, ctrl+c    quit",
+	}
+	if width < 100 {
+		lines = []string{
+			"Help",
+			"Use ↑/↓ to select; commands without N use the selected row.",
+			"",
+			"h/? help         toggle help",
+			"refresh          refresh runner state",
+			"start/stop N     control runner",
+			"restart N        restart runner",
+			"clear N          clear idle runner work files",
+			"logs N           open runner logs",
+			"remove N confirm unregister runner",
+			"delete N confirm unregister and delete safe runner folder",
+			"q/esc/ctrl+c     quit",
+		}
+	}
+	limit := max(1, height-4)
+	if len(lines) > limit {
+		lines = lines[:limit]
+	}
+	for i := range lines {
+		lines[i] = trunc(lines[i], max(20, width))
+	}
+	return strings.Join(lines, "\n")
 }
 
 func boolText(value bool) string {
