@@ -83,6 +83,15 @@ outlive Bubble Tea shutdown and keep the launch window around. Race validation
 is still a local toolchain issue rather than a code validation signal until a
 working cgo/GCC toolchain is available.
 
+## 2026-06-04 -- Windows race-test toolchain
+
+Go `go test -race ./...` on Windows failed with the existing MCF MinGW GCC
+16.1.1 toolchain even after `gcc.exe` was on `PATH`; `runtime/cgo` failed in the
+assembler with `junk '(eax)' after expression`. Installing MSYS2 and
+`mingw-w64-ucrt-x86_64-gcc` fixed the race-test toolchain. User `PATH` should
+prefer `C:\msys64\ucrt64\bin` over `C:\Soft\mingw-w64-gcc-mcf\mingw64\bin`.
+With MSYS2 UCRT64 GCC 16.1.0, `go test -race ./...` passes.
+
 ## 2026-06-03 -- Already-running services
 
 Starting an already running Windows service or active WSL unit can still require

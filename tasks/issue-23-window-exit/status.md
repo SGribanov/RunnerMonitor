@@ -19,3 +19,8 @@ Validation:
 - `scripts/build.ps1` passed.
 - `runner-monitor.ps1 --once` passed.
 - `go test -race ./...` remains blocked by local cgo/C compiler toolchain; with `CGO_ENABLED=1`, this environment reports `gcc not found in %PATH%`.
+
+Follow-up:
+- Installed MSYS2 through `winget` and `mingw-w64-ucrt-x86_64-gcc` through `pacman`.
+- Updated User PATH so `C:\msys64\ucrt64\bin` is before the older MCF MinGW path.
+- `go test -race ./...` passed with `gcc.exe (Rev5, Built by MSYS2 project) 16.1.0`.

@@ -11,5 +11,5 @@
 - Smoke:
   - `scripts/build.ps1`
   - `runner-monitor.ps1 --once`
-- Known blocker:
-  - `go test -race ./...` requires a working Windows cgo compiler toolchain.
+- Race:
+  - `go test -race ./...`
