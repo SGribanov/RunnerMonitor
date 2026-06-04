@@ -18,6 +18,8 @@ workflow, принадлежность к проекту и безопасные
 - Объединяет локальное состояние службы/процесса со статусом GitHub через
   `gh api`.
 - Показывает busy-статус, количество queued workflow и stale queued workflow.
+- Автоматически обновляет состояние TUI каждые 5 секунд, не скрывая старую
+  таблицу на время refresh.
 - Позволяет запускать, останавливать, перезапускать, чистить, удалять и
   перенастраивать runner'ы.
 - Защищает опасные операции dry-run режимом, проверкой busy-состояния и
@@ -133,6 +135,7 @@ C:\Repos\RunnerMonitor\bin\runner-monitor.json
     "/opt/Runners",
     "/srv/Runners"
   ],
+  "tuiRefreshIntervalSeconds": 5,
   "wslSudoPassword": ""
 }
 ```
@@ -145,6 +148,7 @@ C:\Repos\RunnerMonitor\bin\runner-monitor.json
 | `windowsRunnerRoots` | Windows-каталоги runner'ов для поиска и безопасного удаления папок. |
 | `wslRunnerRoots` | WSL-каталоги runner'ов для поиска. |
 | `linuxRunnerRoots` | Linux-каталоги runner'ов для отдельной Linux runner-машины. |
+| `tuiRefreshIntervalSeconds` | Интервал автообновления TUI в секундах. По умолчанию `5`, если поле отсутствует или некорректно. |
 | `wslSudoPassword` | Значение sudo-пароля для WSL fallback. Хранить только в app-local config. |
 
 Для тестов или особых запусков можно переопределить путь:
@@ -159,9 +163,14 @@ $env:RUNNER_MONITOR_CONFIG = "D:\Temp\runner-monitor.json"
 
 Команды внутри TUI:
 
+Информация о runner'ах автоматически обновляется каждые 5 секунд по умолчанию.
+Другой интервал можно задать через `tuiRefreshIntervalSeconds` в
+`runner-monitor.json`. Команда `refresh` запускает немедленное обновление; если
+данные уже есть, таблица остается видимой до прихода новой информации.
+
 | Команда | Описание |
 |---|---|
-| `refresh` | Обновить локальное и GitHub-состояние runner'ов. |
+| `refresh` | Немедленно обновить локальное и GitHub-состояние runner'ов. |
 | Стрелки | Выбрать строку runner'а. |
 | `start [N]` | Запустить runner `N` или выбранную строку без номера. |
 | `stop [N]` | Остановить runner `N` или выбранную строку без номера. |

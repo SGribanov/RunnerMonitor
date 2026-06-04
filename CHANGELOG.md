@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.2.0] - 2026-06-04
+
+### Added
+
+- TUI auto-refreshes local and GitHub runner state every 5 seconds.
+- TUI auto-refresh interval is configurable through
+  `tuiRefreshIntervalSeconds` in `runner-monitor.json`.
+- Manual refresh keeps the existing table visible while new data is loading.
+
 ## [0.1.0] - 2026-06-04
 
 ### Added
@@ -28,4 +37,5 @@
 - Release ZIP includes only a sanitized default config with an empty
   `wslSudoPassword`.
 
+[0.2.0]: https://github.com/SGribanov/RunnerMonitor/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/SGribanov/RunnerMonitor/releases/tag/v0.1.0

@@ -368,3 +368,14 @@ MIT `LICENSE`, English `README.md`, Russian `README_RU.MD`, `CONTRIBUTING.md`,
 `CODEOWNERS`, Dependabot config for Go modules, and an expanded `.gitignore`
 that excludes generated builds and local config/secrets. GitHub repo metadata
 was also updated with a description and topics for discoverability.
+
+## 2026-06-04 -- TUI auto-refresh loop
+
+The interactive Bubble Tea model now schedules inventory refresh with a
+single-shot `tea.Tick` loop. The interval comes from
+`tuiRefreshIntervalSeconds` in `runner-monitor.json` and defaults to 5 seconds
+when omitted or invalid. The model tracks `refreshing` so manual and automatic
+refresh commands cannot overlap. Automatic refresh does not enter the
+loading-only screen, and manual `refresh` keeps the current table visible when
+existing data is present; the first startup refresh still shows the wait screen
+because there is no useful old inventory yet.

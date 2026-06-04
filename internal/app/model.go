@@ -18,18 +18,31 @@ type Model struct {
 	inventory     Inventory
 	message       string
 	loading       bool
+	refreshing    bool
+	refreshEvery  time.Duration
 	spinnerFrame  int
 	autoClearIdle bool
 	width         int
 	height        int
 }
 
+type refreshSource string
+
+const (
+	refreshStartup refreshSource = "startup"
+	refreshManual  refreshSource = "manual"
+	refreshAuto    refreshSource = "auto"
+)
+
 type refreshResultMsg struct {
-	inventory Inventory
-	err       error
+	inventory   Inventory
+	err         error
+	source      refreshSource
+	completedAt time.Time
 }
 
 type spinnerTickMsg time.Time
+type autoRefreshTickMsg time.Time
 
 type remoteConnectDoneMsg struct {
 	name string
@@ -50,11 +63,12 @@ func NewModel(inventory Inventory) Model {
 	input.Width = 80
 
 	model := Model{
-		input:     input,
-		inventory: inventory,
-		message:   "ready",
-		width:     120,
-		height:    30,
+		input:        input,
+		inventory:    inventory,
+		message:      "ready",
+		refreshEvery: effectiveSettings().TUIRefreshInterval(),
+		width:        120,
+		height:       30,
 	}
 	model.table = newRunnerTable(inventory.Runners, model.width, tableHeight(model.height))
 	model.resize(model.width, model.height)
@@ -64,15 +78,16 @@ func NewModel(inventory Inventory) Model {
 func NewLoadingModel() Model {
 	model := NewModel(Inventory{})
 	model.loading = true
+	model.refreshing = true
 	model.message = "Ожидайте, идет опрос раннеров..."
 	return model
 }
 
 func (m Model) Init() tea.Cmd {
 	if m.loading {
-		return tea.Batch(textinput.Blink, refreshInventoryCmd(), spinnerTickCmd())
+		return tea.Batch(textinput.Blink, refreshInventoryCmd(refreshStartup), spinnerTickCmd(), m.autoRefreshTickCmd())
 	}
-	return textinput.Blink
+	return tea.Batch(textinput.Blink, m.autoRefreshTickCmd())
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -84,8 +99,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.inventory = msg.inventory
 		m.syncTable()
 		m.loading = false
+		m.refreshing = false
 		if msg.err != nil {
-			m.message = fmt.Sprintf("refresh completed with warnings: %v", msg.err)
+			if msg.source == refreshAuto {
+				m.message = fmt.Sprintf("auto-refresh warning: %v", msg.err)
+			} else {
+				m.message = fmt.Sprintf("refresh completed with warnings: %v", msg.err)
+			}
+		} else if msg.source == refreshAuto {
+			m.message = fmt.Sprintf("auto-refreshed at %s", msg.completedAt.Format("15:04:05"))
 		} else {
 			m.message = "ready"
 		}
@@ -100,6 +122,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.spinnerFrame = (m.spinnerFrame + 1) % len(hourglassFrames)
 		return m, spinnerTickCmd()
+	case autoRefreshTickMsg:
+		if m.refreshing {
+			return m, m.autoRefreshTickCmd()
+		}
+		m.refreshing = true
+		return m, tea.Batch(refreshInventoryCmd(refreshAuto), m.autoRefreshTickCmd())
 	case remoteConnectDoneMsg:
 		if msg.err != nil {
 			m.message = fmt.Sprintf("remote %s connection failed: %v", msg.name, msg.err)
@@ -184,9 +212,18 @@ func (m Model) runCommand(command string) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	}
 	if command == "refresh" {
-		m.loading = true
-		m.message = "Ожидайте, идет опрос раннеров..."
-		return m, tea.Batch(refreshInventoryCmd(), spinnerTickCmd())
+		if m.refreshing {
+			m.message = "refresh already in progress"
+			return m, nil
+		}
+		m.loading = len(m.inventory.Runners) == 0
+		m.refreshing = true
+		if m.loading {
+			m.message = "Ожидайте, идет опрос раннеров..."
+			return m, tea.Batch(refreshInventoryCmd(refreshManual), spinnerTickCmd())
+		}
+		m.message = "refreshing..."
+		return m, refreshInventoryCmd(refreshManual)
 	}
 	if command == "clear idle" {
 		m.message = "clearing idle runners..."
@@ -326,15 +363,25 @@ func removeRunnerCmd(runner Runner, options RemoveRunnerOptions) tea.Cmd {
 	}
 }
 
-func refreshInventoryCmd() tea.Cmd {
+func refreshInventoryCmd(source refreshSource) tea.Cmd {
 	return func() tea.Msg {
 		inventory, err := Refresh()
-		return refreshResultMsg{inventory: inventory, err: err}
+		return refreshResultMsg{inventory: inventory, err: err, source: source, completedAt: time.Now()}
 	}
 }
 
 func spinnerTickCmd() tea.Cmd {
 	return tea.Tick(140*time.Millisecond, func(t time.Time) tea.Msg {
 		return spinnerTickMsg(t)
+	})
+}
+
+func (m Model) autoRefreshTickCmd() tea.Cmd {
+	interval := m.refreshEvery
+	if interval <= 0 {
+		interval = DefaultSettings().TUIRefreshInterval()
+	}
+	return tea.Tick(interval, func(t time.Time) tea.Msg {
+		return autoRefreshTickMsg(t)
 	})
 }

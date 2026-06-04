@@ -8,22 +8,25 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type Settings struct {
-	ProjectsRoot       string   `json:"projectsRoot"`
-	WindowsRunnerRoots []string `json:"windowsRunnerRoots"`
-	WSLRunnerRoots     []string `json:"wslRunnerRoots"`
-	LinuxRunnerRoots   []string `json:"linuxRunnerRoots"`
-	WSLSudoPassword    string   `json:"wslSudoPassword"`
+	ProjectsRoot              string   `json:"projectsRoot"`
+	WindowsRunnerRoots        []string `json:"windowsRunnerRoots"`
+	WSLRunnerRoots            []string `json:"wslRunnerRoots"`
+	LinuxRunnerRoots          []string `json:"linuxRunnerRoots"`
+	TUIRefreshIntervalSeconds int      `json:"tuiRefreshIntervalSeconds"`
+	WSLSudoPassword           string   `json:"wslSudoPassword"`
 }
 
 func DefaultSettings() Settings {
 	return Settings{
-		ProjectsRoot:       `C:\Repos`,
-		WindowsRunnerRoots: []string{`C:\Runners`},
-		WSLRunnerRoots:     []string{`/home/gsv777/Runners`},
-		LinuxRunnerRoots:   []string{"/opt/Runners", "/srv/Runners"},
+		ProjectsRoot:              `C:\Repos`,
+		WindowsRunnerRoots:        []string{`C:\Runners`},
+		WSLRunnerRoots:            []string{`/home/gsv777/Runners`},
+		LinuxRunnerRoots:          []string{"/opt/Runners", "/srv/Runners"},
+		TUIRefreshIntervalSeconds: 5,
 	}
 }
 
@@ -135,7 +138,15 @@ func normalizeSettings(settings Settings) Settings {
 	} else {
 		settings.LinuxRunnerRoots = nonEmptyStrings(settings.LinuxRunnerRoots)
 	}
+	if settings.TUIRefreshIntervalSeconds <= 0 {
+		settings.TUIRefreshIntervalSeconds = defaults.TUIRefreshIntervalSeconds
+	}
 	return settings
+}
+
+func (settings Settings) TUIRefreshInterval() time.Duration {
+	normalized := normalizeSettings(settings)
+	return time.Duration(normalized.TUIRefreshIntervalSeconds) * time.Second
 }
 
 func nonEmptyStrings(values []string) []string {

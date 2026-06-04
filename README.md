@@ -17,6 +17,8 @@ information, repository ownership, and safe lifecycle commands.
 - Shows the project/repository each runner belongs to.
 - Merges local service/process state with GitHub status from `gh api`.
 - Displays busy state, queued workflow count, and stale queued workflow count.
+- Auto-refreshes TUI state every 5 seconds while keeping the previous table
+  visible during refresh.
 - Starts, stops, restarts, clears, removes, and reprovisions selected runners.
 - Keeps destructive operations guarded by dry-runs, busy-runner checks, and
   explicit confirmation.
@@ -132,6 +134,7 @@ Default config:
     "/opt/Runners",
     "/srv/Runners"
   ],
+  "tuiRefreshIntervalSeconds": 5,
   "wslSudoPassword": ""
 }
 ```
@@ -144,6 +147,7 @@ Settings fields:
 | `windowsRunnerRoots` | Windows runner root folders to scan and treat as safe for runner-folder deletion. |
 | `wslRunnerRoots` | WSL runner root folders to scan. |
 | `linuxRunnerRoots` | Linux runner root folders used on a native Linux runner host. |
+| `tuiRefreshIntervalSeconds` | TUI auto-refresh interval in seconds. Defaults to `5` when omitted or invalid. |
 | `wslSudoPassword` | Direct WSL sudo password value for fallback service control. Keep it only in the app-local config. |
 
 For tests or special launch contexts, override the config path:
@@ -158,9 +162,14 @@ Do not commit a real `runner-monitor.json` or sudo password.
 
 Inside the TUI:
 
+Runner information auto-refreshes every 5 seconds by default. Change
+`tuiRefreshIntervalSeconds` in `runner-monitor.json` to use a different
+interval. The `refresh` command starts an immediate refresh; when existing data
+is available, the table stays visible until the new data arrives.
+
 | Command | Description |
 |---|---|
-| `refresh` | Refresh local and GitHub runner state. |
+| `refresh` | Refresh local and GitHub runner state immediately. |
 | Arrow keys | Select a runner row. |
 | `start [N]` | Start runner `N`, or the selected runner if `N` is omitted. |
 | `stop [N]` | Stop runner `N`, or the selected runner if `N` is omitted. |

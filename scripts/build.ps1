@@ -19,6 +19,7 @@ try {
             windowsRunnerRoots = @("C:\Runners")
             wslRunnerRoots = @("/home/gsv777/Runners")
             linuxRunnerRoots = @("/opt/Runners", "/srv/Runners")
+            tuiRefreshIntervalSeconds = 5
             wslSudoPassword = ""
         }
         $DefaultConfig | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $Config -Encoding UTF8

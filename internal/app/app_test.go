@@ -52,6 +52,73 @@ func TestLoadingModelShowsWaitMessageBeforeTable(t *testing.T) {
 	}
 }
 
+func TestAutoRefreshTickStartsNonOverlappingRefresh(t *testing.T) {
+	model := NewModel(Inventory{Runners: []Runner{{Name: "runner-1", Repo: "SGribanov/RunnerMonitor"}}})
+
+	updated, cmd := model.Update(autoRefreshTickMsg{})
+	refreshed, ok := updated.(Model)
+	if !ok {
+		t.Fatalf("updated model has type %T", updated)
+	}
+	if !refreshed.refreshing {
+		t.Fatalf("auto-refresh should mark refresh in progress")
+	}
+	if cmd == nil {
+		t.Fatalf("auto-refresh should return refresh and next tick commands")
+	}
+
+	updated, cmd = refreshed.Update(autoRefreshTickMsg{})
+	skipped, ok := updated.(Model)
+	if !ok {
+		t.Fatalf("updated model has type %T", updated)
+	}
+	if !skipped.refreshing {
+		t.Fatalf("overlapping auto-refresh should keep current refresh in progress")
+	}
+	if cmd == nil {
+		t.Fatalf("overlapping auto-refresh should still schedule the next tick")
+	}
+}
+
+func TestManualRefreshKeepsExistingInventoryVisible(t *testing.T) {
+	model := NewModel(Inventory{Runners: []Runner{{Name: "runner-1", Repo: "SGribanov/RunnerMonitor"}}})
+
+	updated, cmd := model.runCommand("refresh")
+	refreshed, ok := updated.(Model)
+	if !ok {
+		t.Fatalf("updated model has type %T", updated)
+	}
+	if refreshed.loading {
+		t.Fatalf("manual refresh with existing inventory should not enter loading-only view")
+	}
+	if !refreshed.refreshing {
+		t.Fatalf("manual refresh should mark refresh in progress")
+	}
+	if !strings.Contains(refreshed.View(), "runner-1") {
+		t.Fatalf("manual refresh should keep existing table visible: %q", refreshed.View())
+	}
+	if cmd == nil {
+		t.Fatalf("manual refresh should return refresh command")
+	}
+}
+
+func TestManualRefreshSkipsWhenRefreshAlreadyRunning(t *testing.T) {
+	model := NewModel(Inventory{Runners: []Runner{{Name: "runner-1", Repo: "SGribanov/RunnerMonitor"}}})
+	model.refreshing = true
+
+	updated, cmd := model.runCommand("refresh")
+	refreshed, ok := updated.(Model)
+	if !ok {
+		t.Fatalf("updated model has type %T", updated)
+	}
+	if cmd != nil {
+		t.Fatalf("manual refresh while refreshing should not start another command")
+	}
+	if refreshed.message != "refresh already in progress" {
+		t.Fatalf("message = %q", refreshed.message)
+	}
+}
+
 func TestRunnerTableColumnsFitNarrowWidth(t *testing.T) {
 	columns := runnerTableColumns(60)
 	if len(columns) == 0 {
@@ -401,16 +468,20 @@ func TestLoadSettingsFallsBackToDefaults(t *testing.T) {
 	if len(got.WSLRunnerRoots) != 1 || got.WSLRunnerRoots[0] != "/home/gsv777/Runners" {
 		t.Fatalf("WSLRunnerRoots = %#v", got.WSLRunnerRoots)
 	}
+	if got.TUIRefreshIntervalSeconds != 5 {
+		t.Fatalf("TUIRefreshIntervalSeconds = %d", got.TUIRefreshIntervalSeconds)
+	}
 }
 
 func TestLoadSettingsReadsSudoPasswordValue(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "runner-monitor.json")
 	if err := SaveSettingsAt(path, Settings{
-		ProjectsRoot:       `D:\Repos`,
-		WindowsRunnerRoots: []string{`D:\Runners`},
-		WSLRunnerRoots:     []string{"/runnerbox/Runners"},
-		LinuxRunnerRoots:   []string{"/opt/Runners"},
-		WSLSudoPassword:    "secret",
+		ProjectsRoot:              `D:\Repos`,
+		WindowsRunnerRoots:        []string{`D:\Runners`},
+		WSLRunnerRoots:            []string{"/runnerbox/Runners"},
+		LinuxRunnerRoots:          []string{"/opt/Runners"},
+		TUIRefreshIntervalSeconds: 9,
+		WSLSudoPassword:           "secret",
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -423,6 +494,23 @@ func TestLoadSettingsReadsSudoPasswordValue(t *testing.T) {
 	}
 	if got.ProjectsRoot != `D:\Repos` || got.WindowsRunnerRoots[0] != `D:\Runners` {
 		t.Fatalf("settings not loaded: %#v", got)
+	}
+	if got.TUIRefreshIntervalSeconds != 9 {
+		t.Fatalf("TUIRefreshIntervalSeconds = %d", got.TUIRefreshIntervalSeconds)
+	}
+}
+
+func TestLoadSettingsNormalizesInvalidTUIRefreshInterval(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "runner-monitor.json")
+	if err := os.WriteFile(path, []byte(`{"tuiRefreshIntervalSeconds":0}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	got, err := LoadSettingsAt(path)
+	if err != nil {
+		t.Fatalf("LoadSettingsAt returned error: %v", err)
+	}
+	if got.TUIRefreshIntervalSeconds != 5 {
+		t.Fatalf("TUIRefreshIntervalSeconds = %d", got.TUIRefreshIntervalSeconds)
 	}
 }
 
