@@ -63,7 +63,7 @@ workflow, принадлежность к проекту и безопасные
 [GitHub Releases](https://github.com/SGribanov/RunnerMonitor/releases/latest):
 
 ```text
-RunnerMonitor-v0.3.1-windows-x64.zip
+RunnerMonitor-v0.3.3-windows-x64.zip
 ```
 
 Распакуйте ZIP и запустите TUI:
@@ -234,6 +234,11 @@ Inventory и аудит:
 .\runner-monitor.ps1 --stop-current
 .\runner-monitor.ps1 --restart-current
 ```
+
+`start` для service-managed runner'ов теперь является проверкой готовности, а
+не только запросом к service manager. Для systemd runner'ов, включая WSL,
+RunnerMonitor включает unit, запускает его, ждет локальный `active`, а затем
+ждет, пока GitHub покажет runner как `online`.
 
 Безопасная очистка:
 

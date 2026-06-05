@@ -303,6 +303,23 @@ func TestModelShowsUpdateNoticeWithoutReplacingStatus(t *testing.T) {
 	}
 }
 
+func TestModelRendersUpdateNoticeURLAsTerminalLink(t *testing.T) {
+	releaseURL := "https://github.com/SGribanov/RunnerMonitor/releases/tag/v0.3.0"
+	model := NewModel(Inventory{Runners: []Runner{{Name: "runner-1", Repo: "SGribanov/RunnerMonitor"}}})
+	updated, _ := model.Update(updateCheckDoneMsg{notice: "update available: v0.2.0 -> v0.3.0 (" + releaseURL + ")"})
+	noticed, ok := updated.(Model)
+	if !ok {
+		t.Fatalf("updated model has type %T", updated)
+	}
+	view := noticed.View()
+	if !strings.Contains(view, "\x1b]8;;"+releaseURL+"\x1b\\") {
+		t.Fatalf("view missing clickable update URL:\n%s", view)
+	}
+	if !strings.Contains(view, "github.com/SGribanov/RunnerMonitor") {
+		t.Fatalf("view should keep release URL readable:\n%s", view)
+	}
+}
+
 func TestCommandRunnerIndexUsesSelectionWhenNumberMissing(t *testing.T) {
 	got, err := commandRunnerIndex([]string{"start"}, 1, 3)
 	if err != nil {
@@ -345,14 +362,6 @@ func TestRunLifecycleProtectsBusyRunner(t *testing.T) {
 	}
 }
 
-func TestRunLifecycleStartAlreadyRunningDoesNotRequireServiceAccess(t *testing.T) {
-	got := RunLifecycle("start", Runner{Name: "running-runner", LocalState: "running", ServiceName: "svc", ControlMode: "unsupported"})
-	want := "running-runner already running"
-	if got != want {
-		t.Fatalf("RunLifecycle = %q, want %q", got, want)
-	}
-}
-
 func TestRunLifecycleManualWindowsAlreadyRunningDoesNotSpawn(t *testing.T) {
 	got := RunLifecycle("start", Runner{
 		Name:        "manual-windows",
@@ -364,6 +373,99 @@ func TestRunLifecycleManualWindowsAlreadyRunningDoesNotSpawn(t *testing.T) {
 	want := "manual-windows already running"
 	if got != want {
 		t.Fatalf("RunLifecycle = %q, want %q", got, want)
+	}
+}
+
+func TestRunLifecycleStartEnablesStartsAndWaitsForWSLRunnerOnline(t *testing.T) {
+	restore := stubLifecycleControls(t)
+	defer restore()
+
+	var actions []string
+	runServiceAction = func(controlMode, action, serviceName string) error {
+		actions = append(actions, controlMode+" "+action+" "+serviceName)
+		return nil
+	}
+	localStates := []string{"inactive", "active"}
+	serviceState = func(controlMode, serviceName string) (string, error) {
+		state := localStates[0]
+		if len(localStates) > 1 {
+			localStates = localStates[1:]
+		}
+		return state, nil
+	}
+	githubStatuses := []string{"offline", "online"}
+	loadRunnerGitHubStatus = func(repo, name string) (string, error) {
+		status := githubStatuses[0]
+		if len(githubStatuses) > 1 {
+			githubStatuses = githubStatuses[1:]
+		}
+		return status, nil
+	}
+
+	got := RunLifecycle("start", Runner{
+		Name:        "runner-1",
+		Repo:        "SGribanov/RunnerMonitor",
+		ServiceName: "actions.runner.SGribanov-RunnerMonitor.runner-1.service",
+		ControlMode: "wsl-systemd",
+		LocalState:  "inactive",
+	})
+
+	if !strings.Contains(got, "service active; GitHub online") {
+		t.Fatalf("RunLifecycle should confirm active and online, got %q", got)
+	}
+	wantActions := []string{
+		"wsl-systemd enable actions.runner.SGribanov-RunnerMonitor.runner-1.service",
+		"wsl-systemd start actions.runner.SGribanov-RunnerMonitor.runner-1.service",
+	}
+	if strings.Join(actions, "\n") != strings.Join(wantActions, "\n") {
+		t.Fatalf("actions = %#v, want %#v", actions, wantActions)
+	}
+}
+
+func TestRunLifecycleStartReportsWhenGitHubRunnerStaysOffline(t *testing.T) {
+	restore := stubLifecycleControls(t)
+	defer restore()
+
+	loadRunnerGitHubStatus = func(repo, name string) (string, error) {
+		return "offline", nil
+	}
+
+	got := RunLifecycle("start", Runner{
+		Name:        "runner-1",
+		Repo:        "SGribanov/RunnerMonitor",
+		ServiceName: "actions.runner.SGribanov-RunnerMonitor.runner-1.service",
+		ControlMode: "wsl-systemd",
+		LocalState:  "inactive",
+	})
+
+	if !strings.Contains(got, "did not become online") || !strings.Contains(got, "last status: offline") {
+		t.Fatalf("RunLifecycle should report offline GitHub verification, got %q", got)
+	}
+}
+
+func stubLifecycleControls(t *testing.T) func() {
+	t.Helper()
+	oldRunServiceAction := runServiceAction
+	oldServiceState := serviceState
+	oldLoadRunnerGitHubStatus := loadRunnerGitHubStatus
+	oldSleepForLifecyclePoll := sleepForLifecyclePoll
+
+	runServiceAction = func(controlMode, action, serviceName string) error {
+		return nil
+	}
+	serviceState = func(controlMode, serviceName string) (string, error) {
+		return "active", nil
+	}
+	loadRunnerGitHubStatus = func(repo, name string) (string, error) {
+		return "online", nil
+	}
+	sleepForLifecyclePoll = func(time.Duration) {}
+
+	return func() {
+		runServiceAction = oldRunServiceAction
+		serviceState = oldServiceState
+		loadRunnerGitHubStatus = oldLoadRunnerGitHubStatus
+		sleepForLifecyclePoll = oldSleepForLifecyclePoll
 	}
 }
 

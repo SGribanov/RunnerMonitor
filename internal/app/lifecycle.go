@@ -5,6 +5,20 @@ import (
 	"os/exec"
 	"runtime"
 	"strings"
+	"time"
+)
+
+const (
+	startLocalTimeout  = 15 * time.Second
+	startGitHubTimeout = 60 * time.Second
+	startPollInterval  = 2 * time.Second
+)
+
+var (
+	runServiceAction       = defaultRunServiceAction
+	serviceState           = defaultServiceState
+	loadRunnerGitHubStatus = loadRunnerGitHubStatusFromAPI
+	sleepForLifecyclePoll  = time.Sleep
 )
 
 func RunLifecycle(action string, runner Runner) string {
@@ -20,10 +34,10 @@ func RunLifecycle(action string, runner Runner) string {
 	if runner.Busy && !force && (action == "stop" || action == "restart") {
 		return fmt.Sprintf("%s is busy; use force-%s to override", runner.Name, action)
 	}
-	if action == "start" && isAlreadyRunning(runner.LocalState) {
-		return fmt.Sprintf("%s already running", runner.Name)
-	}
 	if runner.ControlMode == "manual" && runner.Transport == "windows" {
+		if action == "start" && isAlreadyRunning(runner.LocalState) {
+			return fmt.Sprintf("%s already running", runner.Name)
+		}
 		if runtime.GOOS != "windows" {
 			return "manual Windows runner control is only available on Windows"
 		}
@@ -37,6 +51,13 @@ func RunLifecycle(action string, runner Runner) string {
 	}
 	if runner.ServiceName == "" {
 		return fmt.Sprintf("%s is not service-managed; cannot %s", runner.Name, action)
+	}
+
+	if action == "start" {
+		if err := startServiceManagedRunner(runner); err != nil {
+			return fmt.Sprintf("start %s failed: %v", runner.Name, err)
+		}
+		return fmt.Sprintf("%s start requested; service active; GitHub online", runner.Name)
 	}
 
 	var err error
@@ -57,6 +78,141 @@ func RunLifecycle(action string, runner Runner) string {
 		return fmt.Sprintf("%s %s failed: %v", action, runner.Name, err)
 	}
 	return fmt.Sprintf("%s %s requested", action, runner.Name)
+}
+
+func startServiceManagedRunner(runner Runner) error {
+	if supportsServiceEnable(runner.ControlMode) {
+		if err := runServiceAction(runner.ControlMode, "enable", runner.ServiceName); err != nil {
+			return fmt.Errorf("enable service %s: %w", runner.ServiceName, err)
+		}
+	}
+	if err := runServiceAction(runner.ControlMode, "start", runner.ServiceName); err != nil {
+		return fmt.Errorf("start service %s: %w", runner.ServiceName, err)
+	}
+	if err := waitForServiceActive(runner.ControlMode, runner.ServiceName, startLocalTimeout, startPollInterval); err != nil {
+		return err
+	}
+	if err := waitForGitHubRunnerOnline(runner.Repo, runner.Name, startGitHubTimeout, startPollInterval); err != nil {
+		return err
+	}
+	return nil
+}
+
+func supportsServiceEnable(controlMode string) bool {
+	return controlMode == "wsl-systemd" || controlMode == "systemd"
+}
+
+func waitForServiceActive(controlMode, serviceName string, timeout, interval time.Duration) error {
+	attempts := lifecyclePollAttempts(timeout, interval)
+	lastState := ""
+	for i := 0; i < attempts; i++ {
+		state, err := serviceState(controlMode, serviceName)
+		if err == nil && isAlreadyRunning(state) {
+			return nil
+		}
+		if strings.TrimSpace(state) != "" {
+			lastState = strings.TrimSpace(state)
+		}
+		if i < attempts-1 {
+			sleepForLifecyclePoll(interval)
+		}
+	}
+	if lastState == "" {
+		lastState = "unknown"
+	}
+	return fmt.Errorf("service %s did not become active; last state: %s", serviceName, lastState)
+}
+
+func waitForGitHubRunnerOnline(repo, name string, timeout, interval time.Duration) error {
+	if strings.TrimSpace(repo) == "" || strings.TrimSpace(name) == "" {
+		return fmt.Errorf("cannot verify GitHub online status without repo and runner name")
+	}
+	attempts := lifecyclePollAttempts(timeout, interval)
+	lastStatus := ""
+	var lastErr error
+	for i := 0; i < attempts; i++ {
+		status, err := loadRunnerGitHubStatus(repo, name)
+		if err == nil && strings.EqualFold(status, "online") {
+			return nil
+		}
+		if err != nil {
+			lastErr = err
+		}
+		if strings.TrimSpace(status) != "" {
+			lastStatus = strings.TrimSpace(status)
+		}
+		if i < attempts-1 {
+			sleepForLifecyclePoll(interval)
+		}
+	}
+	if lastStatus == "" {
+		lastStatus = "unknown"
+	}
+	if lastErr != nil {
+		return fmt.Errorf("GitHub runner %s/%s did not become online; last status: %s; last error: %v", repo, name, lastStatus, lastErr)
+	}
+	return fmt.Errorf("GitHub runner %s/%s did not become online; last status: %s", repo, name, lastStatus)
+}
+
+func lifecyclePollAttempts(timeout, interval time.Duration) int {
+	if interval <= 0 || timeout <= 0 {
+		return 1
+	}
+	attempts := int(timeout / interval)
+	if timeout%interval != 0 {
+		attempts++
+	}
+	if attempts < 1 {
+		return 1
+	}
+	return attempts
+}
+
+func defaultRunServiceAction(controlMode, action, serviceName string) error {
+	switch controlMode {
+	case "windows-service":
+		if runtime.GOOS != "windows" {
+			return fmt.Errorf("Windows service control is only available on Windows")
+		}
+		return runWindowsService(action, serviceName)
+	case "wsl-systemd":
+		return runWSLService(action, serviceName)
+	case "systemd":
+		return runCommandWithOutput("systemctl", action, serviceName)
+	default:
+		return fmt.Errorf("unsupported control mode %q", controlMode)
+	}
+}
+
+func defaultServiceState(controlMode, serviceName string) (string, error) {
+	switch controlMode {
+	case "windows-service":
+		return "active", nil
+	case "wsl-systemd":
+		return wslServiceState(serviceName), nil
+	case "systemd":
+		out, err := exec.Command("systemctl", "is-active", serviceName).Output()
+		return strings.TrimSpace(string(out)), err
+	default:
+		return "", fmt.Errorf("unsupported control mode %q", controlMode)
+	}
+}
+
+func loadRunnerGitHubStatusFromAPI(repo, name string) (string, error) {
+	data, err := ghAPI(fmt.Sprintf("repos/%s/actions/runners", repo))
+	if err != nil {
+		return "", err
+	}
+	response, err := parseRunnersResponse(data)
+	if err != nil {
+		return "", err
+	}
+	for _, runner := range response.Runners {
+		if strings.EqualFold(runner.Name, name) {
+			return runner.Status, nil
+		}
+	}
+	return "missing", nil
 }
 
 func OpenLogs(runner Runner) string {

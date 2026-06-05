@@ -65,8 +65,8 @@ func LoadGitHubStatus(repos []string) (map[string]GitHubRunnerStatus, map[string
 			warnings = append(warnings, fmt.Sprintf("%s runners: %v", repo, err))
 			continue
 		}
-		var response runnersResponse
-		if err := json.Unmarshal(runnerData, &response); err != nil {
+		response, err := parseRunnersResponse(runnerData)
+		if err != nil {
 			warnings = append(warnings, fmt.Sprintf("%s runners json: %v", repo, err))
 			continue
 		}
@@ -109,6 +109,12 @@ func LoadGitHubStatus(repos []string) (map[string]GitHubRunnerStatus, map[string
 		return statuses, queues, errors.New(strings.Join(warnings, "; "))
 	}
 	return statuses, queues, nil
+}
+
+func parseRunnersResponse(data []byte) (runnersResponse, error) {
+	var response runnersResponse
+	err := json.Unmarshal(data, &response)
+	return response, err
 }
 
 func LoadGitHubStatusCached(repos []string, maxAge time.Duration) (map[string]GitHubRunnerStatus, map[string]QueueStatus, error) {
