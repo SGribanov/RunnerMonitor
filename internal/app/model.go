@@ -34,6 +34,7 @@ const (
 	refreshStartup refreshSource = "startup"
 	refreshManual  refreshSource = "manual"
 	refreshAuto    refreshSource = "auto"
+	refreshCommand refreshSource = "command"
 )
 
 type refreshResultMsg struct {
@@ -114,6 +115,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		} else if msg.source == refreshAuto {
 			m.message = fmt.Sprintf("auto-refreshed at %s", msg.completedAt.Format("15:04:05"))
+		} else if msg.source == refreshCommand {
+			m.message = "status refreshed after command"
 		} else {
 			m.message = "ready"
 		}
@@ -347,6 +350,11 @@ func (m Model) runCommand(command string) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.message = RunLifecycle(parts[0], runner)
+		if m.refreshing {
+			return m, nil
+		}
+		m.refreshing = true
+		return m, refreshInventoryCmd(refreshCommand)
 	case "clear":
 		runner, ok := m.commandRunner(parts)
 		if !ok {
@@ -417,7 +425,7 @@ func commandHasConfirm(parts []string) bool {
 
 func isTableNavigationKey(msg tea.KeyMsg) bool {
 	switch msg.String() {
-	case "up", "down", "k", "j", "pgup", "pgdown", "home", "end", "g", "G", " ", "b", "f", "u", "d", "ctrl+u", "ctrl+d":
+	case "up", "down", "k", "j", "pgup", "pgdown", "home", "end", "g", "G", " ", "b", "f", "u", "ctrl+u", "ctrl+d":
 		return true
 	default:
 		return false

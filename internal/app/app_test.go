@@ -281,6 +281,18 @@ func TestTUIHelpKeyTogglesHelpAndEscClosesIt(t *testing.T) {
 	}
 }
 
+func TestTUICommandInputAcceptsDAsFirstCharacter(t *testing.T) {
+	model := NewModel(Inventory{Runners: []Runner{{Name: "runner-1", Repo: "SGribanov/RunnerMonitor"}}})
+	updated, _ := model.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	typed, ok := updated.(Model)
+	if !ok {
+		t.Fatalf("updated model has type %T", updated)
+	}
+	if typed.input.Value() != "d" {
+		t.Fatalf("input value = %q, want d", typed.input.Value())
+	}
+}
+
 func TestUpdateNoticeOnlyShowsNewerRelease(t *testing.T) {
 	got := updateNotice("v0.2.0", "v0.3.0", "https://github.com/SGribanov/RunnerMonitor/releases/tag/v0.3.0")
 	if !strings.Contains(got, "update available: v0.2.0 -> v0.3.0") {
@@ -341,6 +353,24 @@ func TestCommandRunnerIndexUsesSelectionWhenNumberMissing(t *testing.T) {
 	}
 	if numbered != 2 {
 		t.Fatalf("numbered index = %d", numbered)
+	}
+}
+
+func TestLifecycleCommandStartsStatusRefresh(t *testing.T) {
+	model := NewModel(Inventory{Runners: []Runner{{Name: "runner-1", Repo: "SGribanov/RunnerMonitor"}}})
+	updated, cmd := model.runCommand("start")
+	started, ok := updated.(Model)
+	if !ok {
+		t.Fatalf("updated model has type %T", updated)
+	}
+	if !started.refreshing {
+		t.Fatalf("lifecycle command should mark refresh in progress")
+	}
+	if cmd == nil {
+		t.Fatalf("lifecycle command should return a refresh command")
+	}
+	if !strings.Contains(started.message, "not service-managed") {
+		t.Fatalf("lifecycle result message should be preserved before refresh, got %q", started.message)
 	}
 }
 
