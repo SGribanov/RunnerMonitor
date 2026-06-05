@@ -53,6 +53,13 @@ func TestLoadingModelShowsWaitMessageBeforeTable(t *testing.T) {
 	}
 }
 
+func TestModelTitleShowsCurrentVersion(t *testing.T) {
+	view := NewModel(Inventory{}).View()
+	if !strings.Contains(view, "RunnerMonitor "+CurrentVersion) {
+		t.Fatalf("view title should include current version %q: %q", CurrentVersion, view)
+	}
+}
+
 func TestAutoRefreshTickStartsNonOverlappingRefresh(t *testing.T) {
 	model := NewModel(Inventory{Runners: []Runner{{Name: "runner-1", Repo: "SGribanov/RunnerMonitor"}}})
 

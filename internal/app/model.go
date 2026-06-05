@@ -182,7 +182,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) View() string {
 	var b strings.Builder
-	title := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("39")).Render("RunnerMonitor")
+	title := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("39")).Render("RunnerMonitor " + CurrentVersion)
 	updateNotice := renderUpdateNotice(m.updateNotice, max(20, m.width))
 	b.WriteString(title)
 	b.WriteString("\n")
