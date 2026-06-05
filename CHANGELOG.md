@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.3] - 2026-06-05
+
+### Fixed
+
+- TUI update notices now render release URLs as OSC-8 terminal hyperlinks while
+  keeping the visible URL readable in terminals that do not support clickable
+  links.
+- Service-managed runner `start` now waits for real readiness: systemd-backed
+  runners are enabled before start, local service state must become active, and
+  GitHub must report the runner as `online` before success is reported.
+
 ## [0.3.2] - 2026-06-04
 
 ### Added
@@ -90,6 +101,7 @@
 - Release ZIP includes only a sanitized default config with an empty
   `wslSudoPassword`.
 
+[0.3.3]: https://github.com/SGribanov/RunnerMonitor/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/SGribanov/RunnerMonitor/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/SGribanov/RunnerMonitor/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/SGribanov/RunnerMonitor/compare/v0.2.1...v0.3.0

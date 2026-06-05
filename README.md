@@ -62,7 +62,7 @@ Download the latest ready-to-run Windows package from
 [GitHub Releases](https://github.com/SGribanov/RunnerMonitor/releases/latest):
 
 ```text
-RunnerMonitor-v0.3.1-windows-x64.zip
+RunnerMonitor-v0.3.3-windows-x64.zip
 ```
 
 Extract the ZIP and start the TUI:
@@ -233,6 +233,11 @@ Current Git project lifecycle:
 .\runner-monitor.ps1 --stop-current
 .\runner-monitor.ps1 --restart-current
 ```
+
+`start` for service-managed runners is a readiness check, not just a service
+request. For systemd-backed runners, including WSL runners, RunnerMonitor
+enables the unit, starts it, waits for the local service to become active, and
+then waits until GitHub reports the runner as `online`.
 
 Safe cleanup:
 

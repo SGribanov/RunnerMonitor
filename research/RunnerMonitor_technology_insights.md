@@ -467,3 +467,13 @@ The bug case was a WSL unit that existed but was `disabled` and `inactive
 message even though GitHub still showed the runner unavailable. Polling the
 GitHub runner API after local activation gives the app-level readiness signal:
 the runner is online and listening for jobs.
+
+## 2026-06-05 -- Release packaging PowerShell wildcard gotcha
+
+RunnerMonitor release ZIP packaging should use `Compress-Archive -Path
+(Join-Path $Stage '*')`, not `-LiteralPath` with a wildcard. PowerShell treats
+`-LiteralPath` literally, so `stage\*` is not expanded and the ZIP is not
+created. The v0.3.3 local release artifact was built by staging
+`runner-monitor.ps1`, `bin/runner-monitor.exe`, sanitized
+`bin/runner-monitor.json`, README files, and `LICENSE`, then compressing the
+expanded stage contents and writing a SHA256 file.
