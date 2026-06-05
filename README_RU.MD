@@ -63,7 +63,7 @@ workflow, принадлежность к проекту и безопасные
 [GitHub Releases](https://github.com/SGribanov/RunnerMonitor/releases/latest):
 
 ```text
-RunnerMonitor-v0.3.3-windows-x64.zip
+RunnerMonitor-v0.3.4-windows-x64.zip
 ```
 
 Распакуйте ZIP и запустите TUI:
@@ -209,6 +209,11 @@ $env:RUNNER_MONITOR_CONFIG = "D:\Temp\runner-monitor.json"
 низкоприоритетные колонки, а ключевые поля project/runner/status/busy/queue
 остаются выровненными. В TUI-таблице колонка `Busy` использует обычный текст
 `true`/`false`, чтобы статусные колонки оставались выровненными и читаемыми.
+
+После lifecycle-команд `start`, `stop` и `restart` TUI сразу запускает
+обновление статуса, чтобы таблица подтянула состояние service/GitHub без
+ожидания следующего auto-refresh. Командная строка принимает `d` первой
+буквой, поэтому `delete N confirm` можно вводить нормально.
 
 ## CLI-команды
 

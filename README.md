@@ -62,7 +62,7 @@ Download the latest ready-to-run Windows package from
 [GitHub Releases](https://github.com/SGribanov/RunnerMonitor/releases/latest):
 
 ```text
-RunnerMonitor-v0.3.3-windows-x64.zip
+RunnerMonitor-v0.3.4-windows-x64.zip
 ```
 
 Extract the ZIP and start the TUI:
@@ -208,6 +208,11 @@ The table is resize-aware. On narrow terminals, low-priority columns are hidden
 before the main project, runner, status, busy, and queue columns are allowed to
 drift. In the TUI table, the `Busy` column uses plain `true`/`false` text so
 status columns stay aligned and readable.
+
+After lifecycle commands such as `start`, `stop`, and `restart`, the TUI starts
+an immediate status refresh so the table catches up with the service and GitHub
+state without waiting for the next auto-refresh tick. The command input accepts
+`d` as the first typed character, so `delete N confirm` can be typed normally.
 
 ## CLI Command Reference
 

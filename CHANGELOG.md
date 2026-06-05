@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.3.4] - 2026-06-05
+
+### Fixed
+
+- TUI command input now accepts `d` as the first typed character, so
+  `delete N confirm` can be entered from an empty command line.
+- TUI lifecycle commands now trigger an immediate fresh status refresh after
+  `start`, `stop`, `restart`, and force variants, so local/GitHub state catches
+  up without waiting for the next auto-refresh tick.
+
 ## [0.3.3] - 2026-06-05
 
 ### Fixed
@@ -101,6 +111,7 @@
 - Release ZIP includes only a sanitized default config with an empty
   `wslSudoPassword`.
 
+[0.3.4]: https://github.com/SGribanov/RunnerMonitor/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/SGribanov/RunnerMonitor/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/SGribanov/RunnerMonitor/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/SGribanov/RunnerMonitor/compare/v0.3.0...v0.3.1
