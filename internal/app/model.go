@@ -183,6 +183,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() string {
 	var b strings.Builder
 	title := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("39")).Render("RunnerMonitor")
+	updateNotice := renderUpdateNotice(m.updateNotice, max(20, m.width))
 	b.WriteString(title)
 	b.WriteString("\n")
 	if m.loading {
@@ -193,7 +194,7 @@ func (m Model) View() string {
 	}
 	if m.height <= 8 {
 		if m.updateNotice != "" {
-			b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(trunc(m.updateNotice, max(20, m.width))))
+			b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(updateNotice))
 			b.WriteString("\n")
 		}
 		if m.message != "" {
@@ -212,7 +213,7 @@ func (m Model) View() string {
 			b.WriteString("\n")
 		}
 		if m.updateNotice != "" {
-			b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(trunc(m.updateNotice, max(20, m.width))))
+			b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(updateNotice))
 			b.WriteString("\n")
 		}
 		b.WriteString(m.input.View())
@@ -228,12 +229,32 @@ func (m Model) View() string {
 		b.WriteString("\n")
 	}
 	if m.updateNotice != "" {
-		b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(trunc(m.updateNotice, max(20, m.width))))
+		b.WriteString(lipgloss.NewStyle().Foreground(lipgloss.Color("214")).Render(updateNotice))
 		b.WriteString("\n")
 	}
 	b.WriteString(m.input.View())
 	b.WriteString("\n")
 	return b.String()
+}
+
+func renderUpdateNotice(notice string, width int) string {
+	open := strings.LastIndex(notice, "(")
+	close := strings.LastIndex(notice, ")")
+	if open < 0 || close <= open {
+		return trunc(notice, width)
+	}
+	url := strings.TrimSpace(notice[open+1 : close])
+	if !strings.HasPrefix(url, "https://") && !strings.HasPrefix(url, "http://") {
+		return trunc(notice, width)
+	}
+	prefix := notice[:open+1]
+	suffix := notice[close:]
+	labelWidth := max(1, width-len(prefix)-len(suffix))
+	return prefix + terminalHyperlink(url, trunc(url, labelWidth)) + suffix
+}
+
+func terminalHyperlink(url string, label string) string {
+	return "\x1b]8;;" + url + "\x1b\\" + label + "\x1b]8;;\x1b\\"
 }
 
 func (m *Model) resize(width, height int) {

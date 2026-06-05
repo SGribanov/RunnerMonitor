@@ -4,7 +4,7 @@
 |---|---|
 | Project | RunnerMonitor |
 | Type | technology-research |
-| Last updated | 2026-06-04 |
+| Last updated | 2026-06-05 |
 | Status | active |
 | Tags | go, bubble-tea, github-actions, wsl, windows-services |
 
@@ -443,3 +443,27 @@ refresh commands cannot overlap. Automatic refresh does not enter the
 loading-only screen, and manual `refresh` keeps the current table visible when
 existing data is present; the first startup refresh still shows the wait screen
 because there is no useful old inventory yet.
+
+## 2026-06-04 -- Clickable update notice URL
+
+Terminal hyperlinks should be rendered with OSC-8 escape sequences around the
+visible URL label. The TUI must not truncate the full rendered string after
+adding OSC-8 codes, because that can cut the closing sequence and break the
+link. Instead, truncate only the visible label before wrapping it in the
+hyperlink sequence.
+
+## 2026-06-05 -- Start must verify WSL systemd and GitHub online
+
+Official GitHub Actions runner service guidance confirms that Linux runners
+managed by systemd should be controlled through the service layer and checked
+with service status after start. RunnerMonitor now treats `start` for
+service-managed runners as a full readiness operation, not a fire-and-forget
+command: systemd-backed runners are enabled before start so a previously
+`disabled` WSL unit is corrected, the local unit must become `active`, and the
+matching GitHub runner must report `online` before the command reports success.
+
+The bug case was a WSL unit that existed but was `disabled` and `inactive
+(dead)`. Plain `systemctl start` could leave the user with a success-looking
+message even though GitHub still showed the runner unavailable. Polling the
+GitHub runner API after local activation gives the app-level readiness signal:
+the runner is online and listening for jobs.
