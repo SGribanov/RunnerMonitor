@@ -55,8 +55,8 @@ func RemoveNamedRunner(options RemoveRunnerOptions, inventory Inventory) string 
 }
 
 func RemoveRunner(runner Runner, options RemoveRunnerOptions) string {
-	if runner.IsGitHubHosted() {
-		return fmt.Sprintf("%s is GitHub-hosted and read-only; removal skipped", runner.Name)
+	if runner.IsReadOnlyGitHubRow() {
+		return fmt.Sprintf("%s is %s and read-only; removal skipped", runner.Name, runnerReadOnlyKind(runner))
 	}
 	if runner.Busy && !options.Force {
 		return fmt.Sprintf("%s is busy; removal skipped", runner.Name)

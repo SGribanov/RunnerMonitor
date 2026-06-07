@@ -114,6 +114,25 @@ func TestHostedRunnerRowsAreReadOnly(t *testing.T) {
 	}
 }
 
+func TestGitHubRemoteRunnerRowsAreReadOnly(t *testing.T) {
+	runner := Runner{Name: "partner-runner", Repo: "SGribanov/DeltaG", Transport: "github-remote", ControlMode: "github-remote", LocalState: "remote", Path: "(not local)"}
+	checks := []string{
+		RunLifecycle("start", runner),
+		ClearRunner(runner),
+		RemoveRunner(runner, RemoveRunnerOptions{Confirm: true}),
+		OpenLogs(runner),
+	}
+	for _, got := range checks {
+		if !strings.Contains(got, "GitHub-remote") || !strings.Contains(got, "read-only") {
+			t.Fatalf("read-only message should mention GitHub-remote, got %q", got)
+		}
+	}
+	decision, evidence := AuditRunner(runner)
+	if decision != "keep" || !strings.Contains(evidence, "GitHub-remote") {
+		t.Fatalf("audit = %q/%q", decision, evidence)
+	}
+}
+
 func TestLoadingModelShowsWaitMessageBeforeTable(t *testing.T) {
 	view := NewLoadingModel().View()
 	if !strings.Contains(view, "Ожидайте, идет опрос раннеров...") {
@@ -1002,7 +1021,7 @@ func TestAppendWSLEnvPreservesExistingEntries(t *testing.T) {
 func TestRefreshWithGitHubCacheUsesCachedGitHubStatus(t *testing.T) {
 	previousDiscoverLocal := discoverLocal
 	discoverLocal = func() ([]Runner, error) {
-		return nil, nil
+		return []Runner{{Name: "runner-1", Repo: "SGribanov/RunnerMonitor"}}, nil
 	}
 	t.Cleanup(func() {
 		discoverLocal = previousDiscoverLocal
@@ -1012,7 +1031,7 @@ func TestRefreshWithGitHubCacheUsesCachedGitHubStatus(t *testing.T) {
 	loader := func(repos []string) (map[string]GitHubRunnerStatus, map[string]QueueStatus, error) {
 		calls++
 		return map[string]GitHubRunnerStatus{
-			runnerKey("SGribanov/RunnerMonitor", "runner-1"): {Status: "online", Busy: true},
+			runnerKey("SGribanov/RunnerMonitor", "runner-1"): {Name: "runner-1", Repo: "SGribanov/RunnerMonitor", Status: "online", Busy: true},
 		}, map[string]QueueStatus{"SGribanov/RunnerMonitor": {Count: 1}}, nil
 	}
 	inventory, err := refreshWithGitHubStatus(loader)
@@ -1022,8 +1041,68 @@ func TestRefreshWithGitHubCacheUsesCachedGitHubStatus(t *testing.T) {
 	if calls != 1 {
 		t.Fatalf("loader calls = %d", calls)
 	}
-	if len(inventory.Runners) > 0 {
-		t.Skip("local runner inventory is environment-dependent")
+	if len(inventory.Runners) != 1 || inventory.Runners[0].GitHubStatus != "online" || !inventory.Runners[0].Busy {
+		t.Fatalf("inventory = %#v", inventory.Runners)
+	}
+}
+
+func TestRefreshWithGitHubDataAppendsRemoteOnlyRunners(t *testing.T) {
+	previousDiscoverLocal := discoverLocal
+	discoverLocal = func() ([]Runner, error) {
+		return []Runner{{Name: "local-runner", Repo: "SGribanov/DeltaG", Host: "desktop", Transport: "windows", LocalState: "running"}}, nil
+	}
+	t.Cleanup(func() {
+		discoverLocal = previousDiscoverLocal
+	})
+
+	inventory, err := refreshWithGitHubData(
+		func(repos []string) (map[string]GitHubRunnerStatus, map[string]QueueStatus, error) {
+			return map[string]GitHubRunnerStatus{
+				runnerKey("SGribanov/DeltaG", "local-runner"): {
+					Name:    "local-runner",
+					Repo:    "SGribanov/DeltaG",
+					Status:  "online",
+					Busy:    false,
+					Labels:  []string{"self-hosted", "Windows"},
+					Version: "2.328.0",
+				},
+				runnerKey("SGribanov/DeltaG", "partner-runner"): {
+					Name:    "partner-runner",
+					Repo:    "SGribanov/DeltaG",
+					OS:      "Linux",
+					Status:  "online",
+					Busy:    true,
+					Labels:  []string{"self-hosted", "partner"},
+					Version: "2.328.0",
+				},
+			}, map[string]QueueStatus{"SGribanov/DeltaG": {Count: 2, StaleCount: 1}}, nil
+		},
+		func(repos []string) ([]Runner, error) {
+			return nil, nil
+		},
+	)
+	if err != nil {
+		t.Fatalf("refreshWithGitHubData returned error: %v", err)
+	}
+	if len(inventory.Runners) != 2 {
+		t.Fatalf("runners = %#v", inventory.Runners)
+	}
+	local := findTestRunner(inventory.Runners, "local-runner")
+	if local == nil || local.IsGitHubRemote() || local.GitHubStatus != "online" {
+		t.Fatalf("local runner = %#v", local)
+	}
+	remote := findTestRunner(inventory.Runners, "partner-runner")
+	if remote == nil {
+		t.Fatalf("remote runner missing: %#v", inventory.Runners)
+	}
+	if !remote.IsGitHubRemote() || remote.Host != "github" || remote.LocalState != "remote" || remote.Path != "(not local)" {
+		t.Fatalf("remote metadata = %#v", *remote)
+	}
+	if remote.Repo != "SGribanov/DeltaG" || remote.GitHubStatus != "online" || !remote.Busy || remote.OS != "Linux" || remote.Version != "2.328.0" {
+		t.Fatalf("remote status = %#v", *remote)
+	}
+	if strings.Join(remote.Labels, ",") != "self-hosted,partner" || remote.QueueCount != 2 || remote.StaleQueueCount != 1 {
+		t.Fatalf("remote labels/queue = %#v", *remote)
 	}
 }
 
@@ -1058,6 +1137,15 @@ func TestRefreshWithGitHubDataAppendsHostedJobs(t *testing.T) {
 	if len(inventory.Runners) != 2 {
 		t.Fatalf("runners = %#v", inventory.Runners)
 	}
+}
+
+func findTestRunner(runners []Runner, name string) *Runner {
+	for i := range runners {
+		if runners[i].Name == name {
+			return &runners[i]
+		}
+	}
+	return nil
 }
 
 func TestAuditRunnerCandidateRemove(t *testing.T) {

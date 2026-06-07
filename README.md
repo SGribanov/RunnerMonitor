@@ -9,7 +9,7 @@ move to a dedicated runner host on the local network.
 
 The tool combines local runner lifecycle state with GitHub runner state, queue
 information, repository ownership, safe lifecycle commands, and read-only
-GitHub-hosted job visibility.
+visibility for GitHub-hosted jobs and remote self-hosted runners.
 
 ## What It Does
 
@@ -18,6 +18,8 @@ GitHub-hosted job visibility.
 - Shows the project/repository each runner belongs to.
 - Merges local service/process state with GitHub status from `gh api`.
 - Shows queued and in-progress GitHub-hosted workflow jobs as read-only rows.
+- Shows self-hosted runners registered in monitored GitHub repositories even
+  when their runner folders are not local to this machine.
 - Displays busy state, queued workflow count, and stale queued workflow count.
 - Auto-refreshes TUI state every 5 seconds while keeping the previous table
   visible during refresh.
@@ -64,7 +66,7 @@ Download the latest ready-to-run Windows package from
 [GitHub Releases](https://github.com/SGribanov/RunnerMonitor/releases/latest):
 
 ```text
-RunnerMonitor-v0.4.0-windows-x64.zip
+RunnerMonitor-v0.5.0-windows-x64.zip
 ```
 
 Extract the ZIP and start the TUI:
@@ -184,6 +186,14 @@ by local runners and for repositories listed in `githubHostedRepos`. These rows
 are read-only: lifecycle, cleanup, remove, delete, and reprovision commands are
 intentionally skipped because GitHub-hosted runners are ephemeral GitHub
 infrastructure, not local machines.
+
+Self-hosted runners returned by GitHub for monitored repositories also appear
+when no matching local runner folder is discovered. These partner or otherwise
+remote rows use `github` as host, `remote` as local state, and `(not local)` as
+path. They expose GitHub status, busy state, labels, OS, version, and queue
+counts, but local lifecycle, cleanup, logs, remove, delete, and reprovision
+commands are skipped because RunnerMonitor cannot control another machine's
+runner folder or service.
 
 On startup, the TUI performs one best-effort GitHub Releases check through
 `gh`. If the internet is unavailable or the check fails, RunnerMonitor starts

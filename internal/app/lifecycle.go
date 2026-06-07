@@ -25,8 +25,8 @@ var (
 )
 
 func RunLifecycle(action string, runner Runner) string {
-	if runner.IsGitHubHosted() {
-		return fmt.Sprintf("%s is GitHub-hosted and read-only; cannot %s", runner.Name, action)
+	if runner.IsReadOnlyGitHubRow() {
+		return fmt.Sprintf("%s is %s and read-only; cannot %s", runner.Name, runnerReadOnlyKind(runner), action)
 	}
 	force := false
 	switch action {
@@ -303,6 +303,9 @@ func OpenLogs(runner Runner) string {
 	if runner.IsGitHubHosted() {
 		return fmt.Sprintf("%s is GitHub-hosted; open workflow logs in GitHub: %s", runner.Name, emptyAsDash(runner.Path))
 	}
+	if runner.IsGitHubRemote() {
+		return fmt.Sprintf("%s is GitHub-remote and read-only; local logs are unavailable", runner.Name)
+	}
 	if runner.Path == "" {
 		return "runner path is unknown"
 	}
@@ -316,8 +319,8 @@ func RunRepoLifecycle(action string, repo string, inventory Inventory) string {
 		if !strings.EqualFold(runner.Repo, repo) {
 			continue
 		}
-		if runner.IsGitHubHosted() {
-			fmt.Fprintf(&b, "skip %s: GitHub-hosted read-only\n", runner.Name)
+		if runner.IsReadOnlyGitHubRow() {
+			fmt.Fprintf(&b, "skip %s: %s read-only\n", runner.Name, runnerReadOnlyKind(runner))
 			continue
 		}
 		if runner.ServiceName == "" && !(runner.ControlMode == "manual" && runner.Transport == "windows") {
@@ -331,6 +334,16 @@ func RunRepoLifecycle(action string, repo string, inventory Inventory) string {
 		fmt.Fprintf(&b, "no controllable runners found for %s\n", repo)
 	}
 	return b.String()
+}
+
+func runnerReadOnlyKind(runner Runner) string {
+	if runner.IsGitHubHosted() {
+		return "GitHub-hosted"
+	}
+	if runner.IsGitHubRemote() {
+		return "GitHub-remote"
+	}
+	return "GitHub"
 }
 
 func RunNamedLifecycle(action string, name string, repo string, inventory Inventory) string {

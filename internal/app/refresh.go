@@ -67,6 +67,8 @@ func refreshWithGitHubData(
 			runners[i].StaleQueueCount = queue.StaleCount
 		}
 	}
+	runners = append(runners, remoteOnlyGitHubRunners(statuses, runners, queues)...)
+
 	hosted, err := loadHostedJobs(repos)
 	if err != nil {
 		warnings = append(warnings, err)
@@ -76,6 +78,67 @@ func refreshWithGitHubData(
 	sortRunners(runners)
 
 	return Inventory{Runners: runners}, errors.Join(warnings...)
+}
+
+func remoteOnlyGitHubRunners(statuses map[string]GitHubRunnerStatus, local []Runner, queues map[string]QueueStatus) []Runner {
+	seen := map[string]bool{}
+	for _, runner := range local {
+		seen[runnerKey(runner.Repo, runner.Name)] = true
+	}
+	keys := make([]string, 0, len(statuses))
+	for key := range statuses {
+		if !seen[key] {
+			keys = append(keys, key)
+		}
+	}
+	sort.Strings(keys)
+
+	runners := make([]Runner, 0, len(keys))
+	for _, key := range keys {
+		status := statuses[key]
+		repo := firstNonEmpty(status.Repo, repoFromRunnerKey(key))
+		if repo == "" {
+			continue
+		}
+		queue := queueForRepo(queues, repo)
+		runners = append(runners, Runner{
+			Name:            status.Name,
+			Repo:            repo,
+			OS:              status.OS,
+			Host:            "github",
+			Path:            "(not local)",
+			Transport:       "github-remote",
+			LocalState:      "remote",
+			ControlMode:     "github-remote",
+			GitHubStatus:    firstNonEmpty(status.Status, "unknown"),
+			Busy:            status.Busy,
+			Labels:          append([]string(nil), status.Labels...),
+			Version:         status.Version,
+			QueueCount:      queue.Count,
+			StaleQueueCount: queue.StaleCount,
+		})
+	}
+	return runners
+}
+
+func repoFromRunnerKey(key string) string {
+	repo, _, ok := strings.Cut(key, "|")
+	if !ok {
+		return ""
+	}
+	return repo
+}
+
+func queueForRepo(queues map[string]QueueStatus, repo string) QueueStatus {
+	if queue, ok := queues[repo]; ok {
+		return queue
+	}
+	for key, queue := range queues {
+		if strings.EqualFold(key, repo) {
+			return queue
+		}
+	}
+	return QueueStatus{}
 }
 
 func sortRunners(runners []Runner) {

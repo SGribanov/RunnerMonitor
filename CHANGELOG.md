@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.0] - 2026-06-07
+
+### Added
+
+- Self-hosted runners registered in monitored GitHub repositories now appear as
+  read-only `github`/`remote` rows when no matching local runner folder is
+  discovered.
+
+### Changed
+
+- Mutating commands now explicitly skip GitHub-hosted and GitHub-remote rows
+  because they cannot be started, stopped, cleaned, removed, or reprovisioned
+  by RunnerMonitor.
+
 ## [0.4.0] - 2026-06-07
 
 ### Added
@@ -141,6 +155,7 @@
 - Release ZIP includes only a sanitized default config with an empty
   `wslSudoPassword`.
 
+[0.5.0]: https://github.com/SGribanov/RunnerMonitor/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/SGribanov/RunnerMonitor/compare/v0.3.4...v0.4.0
 [0.3.4]: https://github.com/SGribanov/RunnerMonitor/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/SGribanov/RunnerMonitor/compare/v0.3.2...v0.3.3

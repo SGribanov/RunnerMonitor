@@ -10,6 +10,9 @@ func AuditRunnerWithPolicy(r Runner, policy AuditPolicy) (decision string, evide
 	if r.IsGitHubHosted() {
 		return "keep", "GitHub-hosted workflow job is read-only"
 	}
+	if r.IsGitHubRemote() {
+		return "keep", "GitHub-remote self-hosted runner is read-only"
+	}
 	if reason := policy.KeepReason(r); reason != "" {
 		return "keep", "policy keep: " + reason
 	}

@@ -8,6 +8,22 @@
 | Status | active |
 | Tags | go, bubble-tea, github-actions, wsl, windows-services |
 
+## 2026-06-07 -- Remote-only self-hosted runner visibility
+
+Repository self-hosted runner inventory from `repos/<owner>/<repo>/actions/runners`
+can include partner or dedicated-host runners that are visible to GitHub but
+have no local `.runner` folder on the operator machine. RunnerMonitor should
+not discard those unmatched API entries: it now converts them into read-only
+`github`/`remote` rows with path `(not local)`, preserving GitHub status, busy
+state, labels, OS, runner version, and repo queue counts.
+
+The important safety distinction is transport, not just host. `github-hosted`
+rows represent ephemeral workflow jobs, while `github-remote` rows represent
+persistent self-hosted runner registrations controlled elsewhere. Both are
+read-only from this process. Lifecycle, cleanup, local logs, removal, delete,
+and reprovisioning paths must reject both categories before checking busy state,
+service names, or filesystem paths.
+
 ## 2026-06-07 -- GitHub-hosted job monitoring
 
 GitHub-hosted runners should be treated as workflow execution records rather
