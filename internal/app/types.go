@@ -22,6 +22,10 @@ type Runner struct {
 	StaleQueueCount int
 }
 
+func (runner Runner) IsGitHubHosted() bool {
+	return runner.Transport == "github-hosted"
+}
+
 type runnerConfig struct {
 	AgentName  string `json:"agentName"`
 	GitHubURL  string `json:"gitHubUrl"`

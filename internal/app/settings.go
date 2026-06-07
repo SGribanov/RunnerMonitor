@@ -16,6 +16,7 @@ type Settings struct {
 	WindowsRunnerRoots        []string `json:"windowsRunnerRoots"`
 	WSLRunnerRoots            []string `json:"wslRunnerRoots"`
 	LinuxRunnerRoots          []string `json:"linuxRunnerRoots"`
+	GitHubHostedRepos         []string `json:"githubHostedRepos"`
 	TUIRefreshIntervalSeconds int      `json:"tuiRefreshIntervalSeconds"`
 	WSLSudoPassword           string   `json:"wslSudoPassword"`
 }
@@ -138,6 +139,7 @@ func normalizeSettings(settings Settings) Settings {
 	} else {
 		settings.LinuxRunnerRoots = nonEmptyStrings(settings.LinuxRunnerRoots)
 	}
+	settings.GitHubHostedRepos = normalizeRepoList(settings.GitHubHostedRepos)
 	if settings.TUIRefreshIntervalSeconds <= 0 {
 		settings.TUIRefreshIntervalSeconds = defaults.TUIRefreshIntervalSeconds
 	}
@@ -156,6 +158,21 @@ func nonEmptyStrings(values []string) []string {
 		if value != "" {
 			result = append(result, value)
 		}
+	}
+	return result
+}
+
+func normalizeRepoList(values []string) []string {
+	seen := map[string]bool{}
+	result := make([]string, 0, len(values))
+	for _, value := range nonEmptyStrings(values) {
+		repo := repoFromGitHubURL(value)
+		key := strings.ToLower(repo)
+		if repo == "" || seen[key] {
+			continue
+		}
+		seen[key] = true
+		result = append(result, repo)
 	}
 	return result
 }

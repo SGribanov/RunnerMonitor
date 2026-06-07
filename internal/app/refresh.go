@@ -12,16 +12,28 @@ const autoRefreshGitHubCacheTTL = 30 * time.Second
 var discoverLocal = DiscoverLocal
 
 func Refresh() (Inventory, error) {
-	return refreshWithGitHubStatus(LoadGitHubStatus)
+	return refreshWithGitHubData(LoadGitHubStatus, LoadGitHubHostedJobs)
 }
 
 func RefreshWithGitHubCache(maxAge time.Duration) (Inventory, error) {
-	return refreshWithGitHubStatus(func(repos []string) (map[string]GitHubRunnerStatus, map[string]QueueStatus, error) {
-		return LoadGitHubStatusCached(repos, maxAge)
-	})
+	return refreshWithGitHubData(
+		func(repos []string) (map[string]GitHubRunnerStatus, map[string]QueueStatus, error) {
+			return LoadGitHubStatusCached(repos, maxAge)
+		},
+		func(repos []string) ([]Runner, error) {
+			return LoadGitHubHostedJobsCached(repos, maxAge)
+		},
+	)
 }
 
 func refreshWithGitHubStatus(loadGitHubStatus func([]string) (map[string]GitHubRunnerStatus, map[string]QueueStatus, error)) (Inventory, error) {
+	return refreshWithGitHubData(loadGitHubStatus, func([]string) ([]Runner, error) { return nil, nil })
+}
+
+func refreshWithGitHubData(
+	loadGitHubStatus func([]string) (map[string]GitHubRunnerStatus, map[string]QueueStatus, error),
+	loadHostedJobs func([]string) ([]Runner, error),
+) (Inventory, error) {
 	var warnings []error
 	var runners []Runner
 
@@ -31,7 +43,8 @@ func refreshWithGitHubStatus(loadGitHubStatus func([]string) (map[string]GitHubR
 	}
 	runners = append(runners, local...)
 
-	statuses, queues, err := loadGitHubStatus(uniqueRepos(runners))
+	repos := monitoredRepos(runners, effectiveSettings().GitHubHostedRepos)
+	statuses, queues, err := loadGitHubStatus(repos)
 	if err != nil {
 		warnings = append(warnings, err)
 	}
@@ -54,6 +67,11 @@ func refreshWithGitHubStatus(loadGitHubStatus func([]string) (map[string]GitHubR
 			runners[i].StaleQueueCount = queue.StaleCount
 		}
 	}
+	hosted, err := loadHostedJobs(repos)
+	if err != nil {
+		warnings = append(warnings, err)
+	}
+	runners = append(runners, hosted...)
 
 	sortRunners(runners)
 
@@ -83,14 +101,34 @@ func sortRunners(runners []Runner) {
 }
 
 func uniqueRepos(runners []Runner) []string {
+	return monitoredRepos(runners, nil)
+}
+
+func monitoredRepos(runners []Runner, configured []string) []string {
 	seen := map[string]bool{}
 	var repos []string
 	for _, runner := range runners {
-		if runner.Repo == "" || seen[runner.Repo] {
+		if runner.Repo == "" {
 			continue
 		}
-		seen[runner.Repo] = true
+		key := strings.ToLower(runner.Repo)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
 		repos = append(repos, runner.Repo)
+	}
+	for _, repo := range configured {
+		repo = repoFromGitHubURL(repo)
+		if repo == "" {
+			continue
+		}
+		key := strings.ToLower(repo)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		repos = append(repos, repo)
 	}
 	sort.Strings(repos)
 	return repos

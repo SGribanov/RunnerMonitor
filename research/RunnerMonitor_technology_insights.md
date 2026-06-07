@@ -4,9 +4,53 @@
 |---|---|
 | Project | RunnerMonitor |
 | Type | technology-research |
-| Last updated | 2026-06-05 |
+| Last updated | 2026-06-07 |
 | Status | active |
 | Tags | go, bubble-tea, github-actions, wsl, windows-services |
+
+## 2026-06-07 -- GitHub-hosted job monitoring
+
+GitHub-hosted runners should be treated as workflow execution records rather
+than controllable runner machines. The self-hosted runner endpoint exposes
+named persistent runners, but standard GitHub-hosted runners are ephemeral and
+show up most reliably through queued/in-progress workflow jobs. RunnerMonitor
+therefore adds read-only `github`/`hosted` rows from workflow run job data and
+keeps all lifecycle, cleanup, removal, and reprovision operations blocked for
+those rows.
+
+Repository selection now combines repositories discovered from local runners
+with `githubHostedRepos` in `runner-monitor.json`. This keeps existing local
+self-hosted monitoring automatic while allowing hosted-only projects to be
+observed without creating fake local runner folders. The first release caps
+hosted lookup to recent queued and in-progress runs per repository to avoid
+turning TUI refresh into an expensive full Actions history scan.
+
+## 2026-06-06 -- TUI terminal text-mode reset
+
+Windows terminals can visually appear to change font or text mode after an
+interactive TUI command such as `start 5`, especially after child command
+execution and a full table refresh. The TUI frame should explicitly enter and
+leave normal terminal text mode with `ESC[0m` plus `ESC(B`: the first clears SGR
+style state, and the second selects the normal ASCII character set after any
+alternate character-set leakage. Wrapping every Bubble Tea `View()` frame with
+this reset is a low-risk guard because it does not change command execution,
+runner lifecycle state, or table data.
+
+## 2026-06-06 -- Windows service lifecycle handoff
+
+TUI commands such as `stop 5` can target Windows service-managed runners like
+`SGribanov/IdeaBox ideabox-runner`. A non-elevated TUI cannot stop those
+services directly, and the old post-command refresh replaced the useful error
+message with a generic refreshed status line. Lifecycle commands now preserve
+the command result message across refreshes. Windows service lifecycle actions
+from a non-elevated process launch an elevated PowerShell helper through UAC,
+using named CLI targets such as `--stop-runner NAME --repo OWNER/REPO`.
+
+`stop` should be treated as a readiness operation just like `start`: after the
+service-control call, RunnerMonitor waits for local service state to become
+non-running and for GitHub to report the runner as not `online` before reporting
+success. This avoids a misleading UI where the command was submitted but the
+table immediately still shows `running/online` without context.
 
 ## 2026-06-03 -- Dual-state runner monitoring
 

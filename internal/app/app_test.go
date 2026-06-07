@@ -43,6 +43,77 @@ func TestUniqueRepos(t *testing.T) {
 	}
 }
 
+func TestMonitoredReposIncludesConfiguredHostedRepos(t *testing.T) {
+	repos := monitoredRepos(
+		[]Runner{{Repo: "SGribanov/RunnerMonitor"}},
+		[]string{"https://github.com/SGribanov/HostedOnly.git", "sgribanov/runnermonitor"},
+	)
+	want := []string{"SGribanov/HostedOnly", "SGribanov/RunnerMonitor"}
+	if strings.Join(repos, "|") != strings.Join(want, "|") {
+		t.Fatalf("monitoredRepos = %#v, want %#v", repos, want)
+	}
+}
+
+func TestHostedJobsFromResponseSkipsSelfHostedJobs(t *testing.T) {
+	data := []byte(`{
+		"jobs": [
+			{
+				"id": 1,
+				"name": "test",
+				"status": "in_progress",
+				"runner_name": "GitHub Actions 1",
+				"labels": ["ubuntu-latest"],
+				"html_url": "https://github.com/SGribanov/RunnerMonitor/actions/runs/1/job/1",
+				"created_at": "2026-06-07T10:00:00Z"
+			},
+			{
+				"id": 2,
+				"name": "self",
+				"status": "queued",
+				"labels": ["self-hosted", "Windows"]
+			},
+			{
+				"id": 3,
+				"name": "done",
+				"status": "completed",
+				"labels": ["ubuntu-latest"]
+			}
+		]
+	}`)
+	runners, err := hostedJobsFromResponse("SGribanov/RunnerMonitor", "CI", "", time.Time{}, data)
+	if err != nil {
+		t.Fatalf("hostedJobsFromResponse returned error: %v", err)
+	}
+	if len(runners) != 1 {
+		t.Fatalf("runners = %#v", runners)
+	}
+	runner := runners[0]
+	if !runner.IsGitHubHosted() || runner.Host != "github" || runner.LocalState != "hosted" {
+		t.Fatalf("hosted metadata = %#v", runner)
+	}
+	if runner.Name != "CI / test @ GitHub Actions 1" {
+		t.Fatalf("name = %q", runner.Name)
+	}
+	if runner.GitHubStatus != "in_progress" || !runner.Busy || runner.OS != "Linux" {
+		t.Fatalf("status/busy/os = %q/%v/%q", runner.GitHubStatus, runner.Busy, runner.OS)
+	}
+}
+
+func TestHostedRunnerRowsAreReadOnly(t *testing.T) {
+	runner := Runner{Name: "CI / test", Repo: "SGribanov/RunnerMonitor", Transport: "github-hosted", ControlMode: "github-hosted", Path: "https://github.com/run"}
+	checks := []string{
+		RunLifecycle("start", runner),
+		ClearRunner(runner),
+		RemoveRunner(runner, RemoveRunnerOptions{Confirm: true}),
+		OpenLogs(runner),
+	}
+	for _, got := range checks {
+		if !strings.Contains(got, "GitHub-hosted") {
+			t.Fatalf("read-only message should mention GitHub-hosted, got %q", got)
+		}
+	}
+}
+
 func TestLoadingModelShowsWaitMessageBeforeTable(t *testing.T) {
 	view := NewLoadingModel().View()
 	if !strings.Contains(view, "Ожидайте, идет опрос раннеров...") {
@@ -57,6 +128,16 @@ func TestModelTitleShowsCurrentVersion(t *testing.T) {
 	view := NewModel(Inventory{}).View()
 	if !strings.Contains(view, "RunnerMonitor "+CurrentVersion) {
 		t.Fatalf("view title should include current version %q: %q", CurrentVersion, view)
+	}
+}
+
+func TestModelViewWrapsFrameWithTerminalTextModeReset(t *testing.T) {
+	view := NewModel(Inventory{}).View()
+	if !strings.HasPrefix(view, terminalTextModeReset) {
+		t.Fatalf("view should start with terminal text reset, got %q", view[:min(len(view), len(terminalTextModeReset)+10)])
+	}
+	if !strings.HasSuffix(view, terminalTextModeReset) {
+		t.Fatalf("view should end with terminal text reset")
 	}
 }
 
@@ -374,6 +455,24 @@ func TestLifecycleCommandStartsStatusRefresh(t *testing.T) {
 	}
 }
 
+func TestRefreshCommandPreservesLifecycleMessage(t *testing.T) {
+	model := NewModel(Inventory{Runners: []Runner{{Name: "runner-1", Repo: "SGribanov/RunnerMonitor"}}})
+	model.message = "stop runner-1 requested in elevated PowerShell"
+	model.refreshing = true
+
+	updated, _ := model.Update(refreshResultMsg{
+		inventory: Inventory{Runners: []Runner{{Name: "runner-1", Repo: "SGribanov/RunnerMonitor"}}},
+		source:    refreshCommand,
+	})
+	refreshed, ok := updated.(Model)
+	if !ok {
+		t.Fatalf("updated model has type %T", updated)
+	}
+	if refreshed.message != "stop runner-1 requested in elevated PowerShell" {
+		t.Fatalf("refresh should preserve lifecycle message, got %q", refreshed.message)
+	}
+}
+
 func TestRunLifecycleRejectsManualRunner(t *testing.T) {
 	got := RunLifecycle("start", Runner{Name: "manual-runner"})
 	want := "manual-runner is not service-managed; cannot start"
@@ -477,6 +576,51 @@ func TestRunLifecycleStartReportsWhenGitHubRunnerStaysOffline(t *testing.T) {
 
 	if !strings.Contains(got, "did not become online") || !strings.Contains(got, "last status: offline") {
 		t.Fatalf("RunLifecycle should report offline GitHub verification, got %q", got)
+	}
+}
+
+func TestRunLifecycleStopWaitsForServiceStoppedAndGitHubOffline(t *testing.T) {
+	restore := stubLifecycleControls(t)
+	defer restore()
+
+	var actions []string
+	runServiceAction = func(controlMode, action, serviceName string) error {
+		actions = append(actions, controlMode+" "+action+" "+serviceName)
+		return nil
+	}
+	localStates := []string{"active", "inactive"}
+	serviceState = func(controlMode, serviceName string) (string, error) {
+		state := localStates[0]
+		if len(localStates) > 1 {
+			localStates = localStates[1:]
+		}
+		return state, nil
+	}
+	githubStatuses := []string{"online", "offline"}
+	loadRunnerGitHubStatus = func(repo, name string) (string, error) {
+		status := githubStatuses[0]
+		if len(githubStatuses) > 1 {
+			githubStatuses = githubStatuses[1:]
+		}
+		return status, nil
+	}
+
+	got := RunLifecycle("stop", Runner{
+		Name:        "runner-1",
+		Repo:        "SGribanov/RunnerMonitor",
+		ServiceName: "actions.runner.SGribanov-RunnerMonitor.runner-1.service",
+		ControlMode: "wsl-systemd",
+		LocalState:  "active",
+	})
+
+	if !strings.Contains(got, "service stopped; GitHub offline") {
+		t.Fatalf("RunLifecycle stop should confirm stopped and offline, got %q", got)
+	}
+	wantActions := []string{
+		"wsl-systemd stop actions.runner.SGribanov-RunnerMonitor.runner-1.service",
+	}
+	if strings.Join(actions, "\n") != strings.Join(wantActions, "\n") {
+		t.Fatalf("actions = %#v, want %#v", actions, wantActions)
 	}
 }
 
@@ -770,6 +914,20 @@ func TestRenderSettingsMasksSudoPassword(t *testing.T) {
 	}
 }
 
+func TestLoadSettingsNormalizesGitHubHostedRepos(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "runner-monitor.json")
+	if err := os.WriteFile(path, []byte(`{"githubHostedRepos":["https://github.com/SGribanov/HostedOnly.git","SGribanov/HostedOnly"]}`), 0o600); err != nil {
+		t.Fatalf("write settings: %v", err)
+	}
+	settings, err := LoadSettingsAt(path)
+	if err != nil {
+		t.Fatalf("LoadSettingsAt returned error: %v", err)
+	}
+	if len(settings.GitHubHostedRepos) != 1 || settings.GitHubHostedRepos[0] != "SGribanov/HostedOnly" {
+		t.Fatalf("GitHubHostedRepos = %#v", settings.GitHubHostedRepos)
+	}
+}
+
 func TestSafeRunnerRootUsesConfiguredRoots(t *testing.T) {
 	settingsPath := filepath.Join(t.TempDir(), "runner-monitor.json")
 	if err := SaveSettingsAt(settingsPath, Settings{
@@ -866,6 +1024,39 @@ func TestRefreshWithGitHubCacheUsesCachedGitHubStatus(t *testing.T) {
 	}
 	if len(inventory.Runners) > 0 {
 		t.Skip("local runner inventory is environment-dependent")
+	}
+}
+
+func TestRefreshWithGitHubDataAppendsHostedJobs(t *testing.T) {
+	previousDiscoverLocal := discoverLocal
+	discoverLocal = func() ([]Runner, error) {
+		return []Runner{{Name: "local", Repo: "SGribanov/RunnerMonitor"}}, nil
+	}
+	t.Cleanup(func() {
+		discoverLocal = previousDiscoverLocal
+	})
+
+	hostedLoaderCalls := 0
+	inventory, err := refreshWithGitHubData(
+		func(repos []string) (map[string]GitHubRunnerStatus, map[string]QueueStatus, error) {
+			return nil, nil, nil
+		},
+		func(repos []string) ([]Runner, error) {
+			hostedLoaderCalls++
+			if len(repos) != 1 || repos[0] != "SGribanov/RunnerMonitor" {
+				t.Fatalf("hosted repos = %#v", repos)
+			}
+			return []Runner{{Name: "CI / test", Repo: "SGribanov/RunnerMonitor", Transport: "github-hosted"}}, nil
+		},
+	)
+	if err != nil {
+		t.Fatalf("refreshWithGitHubData returned error: %v", err)
+	}
+	if hostedLoaderCalls != 1 {
+		t.Fatalf("hostedLoaderCalls = %d", hostedLoaderCalls)
+	}
+	if len(inventory.Runners) != 2 {
+		t.Fatalf("runners = %#v", inventory.Runners)
 	}
 }
 

@@ -3,12 +3,13 @@
 [English version](README.md)
 
 RunnerMonitor -- легковесное TUI- и CLI-приложение для мониторинга и управления
-self-hosted CI runner'ами. Оно сделано для рабочей станции, где одновременно
+CI runner'ами. Оно сделано для рабочей станции, где одновременно
 есть несколько GitHub Actions runner'ов на Windows и WSL/Linux, с перспективой
 переезда runner'ов на отдельную машину в локальной сети.
 
 Приложение объединяет локальное состояние runner'а, статус GitHub, очередь
-workflow, принадлежность к проекту и безопасные команды управления.
+workflow, принадлежность к проекту, безопасные команды управления и read-only
+видимость GitHub-hosted jobs.
 
 ## Назначение
 
@@ -17,6 +18,8 @@ workflow, принадлежность к проекту и безопасные
 - Показывает проект/репозиторий, к которому относится runner.
 - Объединяет локальное состояние службы/процесса со статусом GitHub через
   `gh api`.
+- Показывает queued и in-progress GitHub-hosted workflow jobs как read-only
+  строки.
 - Показывает busy-статус, количество queued workflow и stale queued workflow.
 - Автоматически обновляет состояние TUI каждые 5 секунд, не скрывая старую
   таблицу на время refresh.
@@ -63,7 +66,7 @@ workflow, принадлежность к проекту и безопасные
 [GitHub Releases](https://github.com/SGribanov/RunnerMonitor/releases/latest):
 
 ```text
-RunnerMonitor-v0.3.4-windows-x64.zip
+RunnerMonitor-v0.4.0-windows-x64.zip
 ```
 
 Распакуйте ZIP и запустите TUI:
@@ -139,6 +142,7 @@ C:\Repos\RunnerMonitor\bin\runner-monitor.json
     "/opt/Runners",
     "/srv/Runners"
   ],
+  "githubHostedRepos": [],
   "tuiRefreshIntervalSeconds": 5,
   "wslSudoPassword": ""
 }
@@ -152,6 +156,7 @@ C:\Repos\RunnerMonitor\bin\runner-monitor.json
 | `windowsRunnerRoots` | Windows-каталоги runner'ов для поиска и безопасного удаления папок. |
 | `wslRunnerRoots` | WSL-каталоги runner'ов для поиска. |
 | `linuxRunnerRoots` | Linux-каталоги runner'ов для отдельной Linux runner-машины. |
+| `githubHostedRepos` | Дополнительные `owner/repo` или GitHub URL, для которых нужно мониторить GitHub-hosted workflow jobs даже без локального runner'а. |
 | `tuiRefreshIntervalSeconds` | Интервал автообновления TUI в секундах. По умолчанию `5`, если поле отсутствует или некорректно. |
 | `wslSudoPassword` | Значение sudo-пароля для WSL fallback. Хранить только в app-local config. |
 
@@ -174,6 +179,13 @@ $env:RUNNER_MONITOR_CONFIG = "D:\Temp\runner-monitor.json"
 Автообновление кратко переиспользует свежий GitHub status, чтобы не запускать
 `gh` для каждого репозитория каждые 5 секунд; ручной `refresh` все равно
 запрашивает свежий GitHub status.
+
+GitHub-hosted Actions jobs отображаются как строки с host `github` и local
+state `hosted`. RunnerMonitor находит hosted jobs для репозиториев, которые уже
+есть в локальных runner'ах, а также для репозиториев из `githubHostedRepos`.
+Эти строки read-only: lifecycle, cleanup, remove, delete и reprovision команды
+намеренно пропускаются, потому что GitHub-hosted runners являются временной
+инфраструктурой GitHub, а не локальными машинами.
 
 При запуске TUI один раз делает best-effort проверку GitHub Releases через
 `gh`. Если интернета нет или проверка не удалась, RunnerMonitor запускается
@@ -232,6 +244,14 @@ Inventory и аудит:
 .\runner-monitor.ps1 --restart-repo SGribanov/DeltaG
 ```
 
+Управление одним runner'ом по имени:
+
+```powershell
+.\runner-monitor.ps1 --start-runner ideabox-runner --repo SGribanov/IdeaBox
+.\runner-monitor.ps1 --stop-runner ideabox-runner --repo SGribanov/IdeaBox
+.\runner-monitor.ps1 --restart-runner ideabox-runner --repo SGribanov/IdeaBox
+```
+
 Управление runner'ами для текущего Git-проекта:
 
 ```powershell
@@ -244,6 +264,12 @@ Inventory и аудит:
 не только запросом к service manager. Для systemd runner'ов, включая WSL,
 RunnerMonitor включает unit, запускает его, ждет локальный `active`, а затем
 ждет, пока GitHub покажет runner как `online`.
+
+`stop` для service-managed runner'ов ждет, пока локальная служба остановится, а
+затем ждет, пока GitHub покажет runner как offline. Если Windows service runner
+останавливается из обычного, не elevated TUI, RunnerMonitor открывает elevated
+PowerShell helper через UAC; после подтверждения helper выполняет stop, а TUI
+продолжает refresh, пока строка не обновится.
 
 Безопасная очистка:
 

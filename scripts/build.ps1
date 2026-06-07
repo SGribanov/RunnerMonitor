@@ -15,10 +15,11 @@ try {
     $Config = Join-Path (Split-Path -Parent $Output) "runner-monitor.json"
     if (-not (Test-Path -LiteralPath $Config)) {
         $DefaultConfig = [ordered]@{
-            projectsRoot = "C:\Repos"
+            projectsRoot = "D:\Repos"
             windowsRunnerRoots = @("C:\Runners")
             wslRunnerRoots = @("/home/gsv777/Runners")
             linuxRunnerRoots = @("/opt/Runners", "/srv/Runners")
+            githubHostedRepos = @()
             tuiRefreshIntervalSeconds = 5
             wslSudoPassword = ""
         }

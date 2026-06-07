@@ -15,7 +15,7 @@ New-Item -ItemType Directory -Force -Path $HookDir | Out-Null
 
 $Hook = @'
 #!/bin/sh
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "C:/Repos/RunnerMonitor/runner-monitor.ps1" --start-current
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "D:/Repos/RunnerMonitor/runner-monitor.ps1" --start-current
 '@
 
 Set-Content -LiteralPath $HookPath -Value $Hook -NoNewline -Encoding UTF8

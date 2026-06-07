@@ -7,6 +7,9 @@ func AuditRunner(r Runner) (decision string, evidence string) {
 }
 
 func AuditRunnerWithPolicy(r Runner, policy AuditPolicy) (decision string, evidence string) {
+	if r.IsGitHubHosted() {
+		return "keep", "GitHub-hosted workflow job is read-only"
+	}
 	if reason := policy.KeepReason(r); reason != "" {
 		return "keep", "policy keep: " + reason
 	}

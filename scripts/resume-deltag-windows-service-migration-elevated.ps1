@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$LogPath = "C:\Repos\RunnerMonitor\reports\windows-service-runner-migration-2026-06-04.log"
+$LogPath = "D:\Repos\RunnerMonitor\reports\windows-service-runner-migration-2026-06-04.log"
 function Write-Log {
     param([string]$Message)
     $line = "[{0}] {1}" -f (Get-Date -Format "yyyy-MM-dd HH:mm:ss"), $Message

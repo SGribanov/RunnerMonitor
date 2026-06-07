@@ -3,12 +3,13 @@
 [Русская версия](README_RU.MD)
 
 RunnerMonitor is a lightweight terminal UI and command-line tool for monitoring
-and controlling self-hosted CI runners. It was built for a workstation that has
+and controlling CI runners. It was built for a workstation that has
 multiple GitHub Actions runners across Windows and WSL/Linux, with a planned
 move to a dedicated runner host on the local network.
 
 The tool combines local runner lifecycle state with GitHub runner state, queue
-information, repository ownership, and safe lifecycle commands.
+information, repository ownership, safe lifecycle commands, and read-only
+GitHub-hosted job visibility.
 
 ## What It Does
 
@@ -16,6 +17,7 @@ information, repository ownership, and safe lifecycle commands.
   Linux runner roots.
 - Shows the project/repository each runner belongs to.
 - Merges local service/process state with GitHub status from `gh api`.
+- Shows queued and in-progress GitHub-hosted workflow jobs as read-only rows.
 - Displays busy state, queued workflow count, and stale queued workflow count.
 - Auto-refreshes TUI state every 5 seconds while keeping the previous table
   visible during refresh.
@@ -62,7 +64,7 @@ Download the latest ready-to-run Windows package from
 [GitHub Releases](https://github.com/SGribanov/RunnerMonitor/releases/latest):
 
 ```text
-RunnerMonitor-v0.3.4-windows-x64.zip
+RunnerMonitor-v0.4.0-windows-x64.zip
 ```
 
 Extract the ZIP and start the TUI:
@@ -138,6 +140,7 @@ Default config:
     "/opt/Runners",
     "/srv/Runners"
   ],
+  "githubHostedRepos": [],
   "tuiRefreshIntervalSeconds": 5,
   "wslSudoPassword": ""
 }
@@ -151,6 +154,7 @@ Settings fields:
 | `windowsRunnerRoots` | Windows runner root folders to scan and treat as safe for runner-folder deletion. |
 | `wslRunnerRoots` | WSL runner root folders to scan. |
 | `linuxRunnerRoots` | Linux runner root folders used on a native Linux runner host. |
+| `githubHostedRepos` | Extra `owner/repo` values or GitHub URLs whose GitHub-hosted workflow jobs should be monitored even when no local runner exists. |
 | `tuiRefreshIntervalSeconds` | TUI auto-refresh interval in seconds. Defaults to `5` when omitted or invalid. |
 | `wslSudoPassword` | Direct WSL sudo password value for fallback service control. Keep it only in the app-local config. |
 
@@ -173,6 +177,13 @@ is available, the table stays visible until the new data arrives. Automatic
 refreshes reuse recent GitHub status briefly to avoid shelling out to `gh` for
 every repository every 5 seconds; manual `refresh` still fetches fresh GitHub
 state.
+
+GitHub-hosted Actions jobs appear as `github` host rows with `hosted` local
+state. RunnerMonitor discovers hosted jobs for repositories already represented
+by local runners and for repositories listed in `githubHostedRepos`. These rows
+are read-only: lifecycle, cleanup, remove, delete, and reprovision commands are
+intentionally skipped because GitHub-hosted runners are ephemeral GitHub
+infrastructure, not local machines.
 
 On startup, the TUI performs one best-effort GitHub Releases check through
 `gh`. If the internet is unavailable or the check fails, RunnerMonitor starts
@@ -231,6 +242,14 @@ Project-scoped lifecycle:
 .\runner-monitor.ps1 --restart-repo SGribanov/DeltaG
 ```
 
+Single-runner lifecycle:
+
+```powershell
+.\runner-monitor.ps1 --start-runner ideabox-runner --repo SGribanov/IdeaBox
+.\runner-monitor.ps1 --stop-runner ideabox-runner --repo SGribanov/IdeaBox
+.\runner-monitor.ps1 --restart-runner ideabox-runner --repo SGribanov/IdeaBox
+```
+
 Current Git project lifecycle:
 
 ```powershell
@@ -243,6 +262,12 @@ Current Git project lifecycle:
 request. For systemd-backed runners, including WSL runners, RunnerMonitor
 enables the unit, starts it, waits for the local service to become active, and
 then waits until GitHub reports the runner as `online`.
+
+`stop` for service-managed runners waits for the local service to stop and then
+waits until GitHub reports the runner as offline. When a Windows service runner
+is controlled from a non-elevated TUI, RunnerMonitor opens an elevated
+PowerShell helper through UAC; after approval, the helper performs the stop and
+the TUI keeps refreshing until the row catches up.
 
 Safe cleanup:
 

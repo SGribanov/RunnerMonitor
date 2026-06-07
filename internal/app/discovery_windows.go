@@ -177,6 +177,20 @@ $ServiceName = $env:RUNNER_MONITOR_SERVICE_NAME
 	return nil
 }
 
+func windowsServiceState(serviceName string) (string, error) {
+	script := `
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
+$ServiceName = $env:RUNNER_MONITOR_SERVICE_NAME
+$service = Get-Service -Name $ServiceName -ErrorAction Stop
+$service.Status.ToString()
+`
+	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script)
+	cmd.Env = append(os.Environ(), "RUNNER_MONITOR_SERVICE_NAME="+serviceName)
+	out, err := cmd.Output()
+	return strings.ToLower(strings.TrimSpace(string(out))), err
+}
+
 func runWindowsManualRunner(action string, runnerPath string) error {
 	switch action {
 	case "start":

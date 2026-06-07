@@ -16,6 +16,9 @@ func main() {
 	startRepo := flag.String("start-repo", "", "start service-managed runners for owner/repo")
 	stopRepo := flag.String("stop-repo", "", "stop service-managed runners for owner/repo")
 	restartRepo := flag.String("restart-repo", "", "restart service-managed runners for owner/repo")
+	startRunner := flag.String("start-runner", "", "start one runner by name")
+	stopRunner := flag.String("stop-runner", "", "stop one runner by name")
+	restartRunner := flag.String("restart-runner", "", "restart one runner by name")
 	clearRepo := flag.String("clear-repo", "", "clear idle runner work directories for owner/repo")
 	clearRunner := flag.String("clear-runner", "", "clear one runner by name")
 	project := flag.String("project", "", "project folder name under configured projectsRoot")
@@ -43,7 +46,8 @@ func main() {
 	flag.Parse()
 
 	needsInventory := *once || *audit || *disableAutostart || *startCurrent || *stopCurrent || *restartCurrent || *clearCurrent || *clearIdle ||
-		*startRepo != "" || *stopRepo != "" || *restartRepo != "" || *clearRepo != "" || *clearRunner != "" || *removeRunner != ""
+		*startRepo != "" || *stopRepo != "" || *restartRepo != "" || *startRunner != "" || *stopRunner != "" || *restartRunner != "" ||
+		*clearRepo != "" || *clearRunner != "" || *removeRunner != ""
 	var inventory app.Inventory
 	if needsInventory {
 		var err error
@@ -122,6 +126,18 @@ func main() {
 	}
 	if *restartRepo != "" {
 		fmt.Print(app.RunRepoLifecycle("restart", *restartRepo, inventory))
+		return
+	}
+	if *startRunner != "" {
+		fmt.Print(app.RunNamedLifecycle("start", *startRunner, *repo, inventory))
+		return
+	}
+	if *stopRunner != "" {
+		fmt.Print(app.RunNamedLifecycle("stop", *stopRunner, *repo, inventory))
+		return
+	}
+	if *restartRunner != "" {
+		fmt.Print(app.RunNamedLifecycle("restart", *restartRunner, *repo, inventory))
 		return
 	}
 	if *clearRepo != "" {

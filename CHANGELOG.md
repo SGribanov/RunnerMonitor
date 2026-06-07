@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.4.0] - 2026-06-07
+
+### Added
+
+- GitHub-hosted Actions jobs are now monitored as read-only rows beside
+  self-hosted runners, using queued and in-progress workflow job data from
+  `gh api`.
+- New `githubHostedRepos` config field lets hosted-only repositories be
+  monitored even when there is no local runner folder for that repository.
+
+### Changed
+
+- Hosted rows use `github` as the host, `hosted` as local state, and link to
+  the GitHub Actions job URL in the path column.
+- Mutating commands now explicitly skip GitHub-hosted rows because GitHub-hosted
+  runners cannot be started, stopped, cleaned, removed, or reprovisioned by
+  RunnerMonitor.
+
 ## [0.3.4] - 2026-06-05
 
 ### Fixed
@@ -9,6 +27,18 @@
 - TUI lifecycle commands now trigger an immediate fresh status refresh after
   `start`, `stop`, `restart`, and force variants, so local/GitHub state catches
   up without waiting for the next auto-refresh tick.
+- TUI lifecycle command messages are preserved after the post-command refresh,
+  so errors and elevated PowerShell handoff messages remain visible.
+- Service-managed runner `stop` now waits for local service state to stop and
+  for GitHub to report the runner offline before reporting success.
+- Non-elevated Windows TUI lifecycle commands for Windows service runners now
+  launch an elevated PowerShell helper instead of silently failing behind the
+  refresh.
+
+### Added
+
+- CLI commands `--start-runner`, `--stop-runner`, and `--restart-runner` allow
+  targeting one named runner, optionally disambiguated with `--repo`.
 
 ## [0.3.3] - 2026-06-05
 
@@ -111,6 +141,7 @@
 - Release ZIP includes only a sanitized default config with an empty
   `wslSudoPassword`.
 
+[0.4.0]: https://github.com/SGribanov/RunnerMonitor/compare/v0.3.4...v0.4.0
 [0.3.4]: https://github.com/SGribanov/RunnerMonitor/compare/v0.3.3...v0.3.4
 [0.3.3]: https://github.com/SGribanov/RunnerMonitor/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/SGribanov/RunnerMonitor/compare/v0.3.1...v0.3.2

@@ -62,6 +62,8 @@ type updateCheckDoneMsg struct {
 
 var hourglassFrames = []string{"⌛", "⏳"}
 
+const terminalTextModeReset = "\x1b[0m\x1b(B"
+
 func NewModel(inventory Inventory) Model {
 	input := textinput.New()
 	input.Placeholder = "refresh | start 1 | connect remote runnerbox | q"
@@ -116,7 +118,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else if msg.source == refreshAuto {
 			m.message = fmt.Sprintf("auto-refreshed at %s", msg.completedAt.Format("15:04:05"))
 		} else if msg.source == refreshCommand {
-			m.message = "status refreshed after command"
+			if m.message == "" {
+				m.message = "status refreshed after command"
+			}
 		} else {
 			m.message = "ready"
 		}
@@ -183,8 +187,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m Model) View() string {
+func (m Model) View() (view string) {
 	var b strings.Builder
+	b.WriteString(terminalTextModeReset)
+	defer func() {
+		view = b.String() + terminalTextModeReset
+	}()
+
 	title := lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("39")).Render("RunnerMonitor " + CurrentVersion)
 	updateNotice := renderUpdateNotice(m.updateNotice, max(20, m.width))
 	b.WriteString(title)

@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$LogPath = "C:\Repos\RunnerMonitor\reports\windows-service-runner-migration-2026-06-04.log"
+$LogPath = "D:\Repos\RunnerMonitor\reports\windows-service-runner-migration-2026-06-04.log"
 New-Item -ItemType Directory -Path (Split-Path -Parent $LogPath) -Force | Out-Null
 
 function Write-Log {
