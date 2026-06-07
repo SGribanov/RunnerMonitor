@@ -26,6 +26,14 @@ func (runner Runner) IsGitHubHosted() bool {
 	return runner.Transport == "github-hosted"
 }
 
+func (runner Runner) IsGitHubRemote() bool {
+	return runner.Transport == "github-remote"
+}
+
+func (runner Runner) IsReadOnlyGitHubRow() bool {
+	return runner.IsGitHubHosted() || runner.IsGitHubRemote()
+}
+
 type runnerConfig struct {
 	AgentName  string `json:"agentName"`
 	GitHubURL  string `json:"gitHubUrl"`

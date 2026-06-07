@@ -13,6 +13,7 @@ import (
 
 type GitHubRunnerStatus struct {
 	Name    string
+	Repo    string
 	OS      string
 	Status  string
 	Busy    bool
@@ -77,6 +78,7 @@ func LoadGitHubStatus(repos []string) (map[string]GitHubRunnerStatus, map[string
 			}
 			statuses[runnerKey(repo, runner.Name)] = GitHubRunnerStatus{
 				Name:    runner.Name,
+				Repo:    repo,
 				OS:      runner.OS,
 				Status:  runner.Status,
 				Busy:    runner.Busy,

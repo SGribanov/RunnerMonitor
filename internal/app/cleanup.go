@@ -11,8 +11,8 @@ import (
 )
 
 func ClearRunner(runner Runner) string {
-	if runner.IsGitHubHosted() {
-		return fmt.Sprintf("%s is GitHub-hosted and read-only; cleanup skipped", runner.Name)
+	if runner.IsReadOnlyGitHubRow() {
+		return fmt.Sprintf("%s is %s and read-only; cleanup skipped", runner.Name, runnerReadOnlyKind(runner))
 	}
 	if runner.Busy {
 		return fmt.Sprintf("%s is busy; cleanup skipped", runner.Name)
