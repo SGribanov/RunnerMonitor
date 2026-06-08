@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+## [0.5.1] - 2026-06-08
+
+### Fixed
+
+- Remote-only self-hosted runner rows can now be unregistered with
+  `remove [N] confirm` or `delete [N] confirm` through the GitHub REST API when
+  the local runner folder no longer exists.
+- Interactive TUI mutating commands now run through Bubble Tea terminal
+  release/restore handling, preserving the font/display reset after external
+  PowerShell, cmd, WSL, and service-control operations.
+
 ## [0.5.0] - 2026-06-07
 
 ### Added
@@ -155,6 +168,8 @@
 - Release ZIP includes only a sanitized default config with an empty
   `wslSudoPassword`.
 
+[Unreleased]: https://github.com/SGribanov/RunnerMonitor/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/SGribanov/RunnerMonitor/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/SGribanov/RunnerMonitor/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/SGribanov/RunnerMonitor/compare/v0.3.4...v0.4.0
 [0.3.4]: https://github.com/SGribanov/RunnerMonitor/compare/v0.3.3...v0.3.4

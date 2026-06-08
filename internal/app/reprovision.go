@@ -55,8 +55,11 @@ func RemoveNamedRunner(options RemoveRunnerOptions, inventory Inventory) string 
 }
 
 func RemoveRunner(runner Runner, options RemoveRunnerOptions) string {
-	if runner.IsReadOnlyGitHubRow() {
+	if runner.IsGitHubHosted() {
 		return fmt.Sprintf("%s is %s and read-only; removal skipped", runner.Name, runnerReadOnlyKind(runner))
+	}
+	if runner.IsGitHubRemote() {
+		return removeGitHubRemoteRunner(runner, options)
 	}
 	if runner.Busy && !options.Force {
 		return fmt.Sprintf("%s is busy; removal skipped", runner.Name)
@@ -94,6 +97,19 @@ func RemoveRunner(runner Runner, options RemoveRunnerOptions) string {
 		return fmt.Sprintf("removed %s and deleted folder", runner.Name)
 	}
 	return fmt.Sprintf("removed %s; folder preserved at %s", runner.Name, runner.Path)
+}
+
+func removeGitHubRemoteRunner(runner Runner, options RemoveRunnerOptions) string {
+	if runner.Busy && !options.Force {
+		return fmt.Sprintf("%s is busy; removal skipped", runner.Name)
+	}
+	if !options.Confirm {
+		return renderGitHubRemoteRemovePlan(runner)
+	}
+	if err := unregisterGitHubRemoteRunner(runner); err != nil {
+		return fmt.Sprintf("remove %s failed while unregistering from GitHub: %v", runner.Name, err)
+	}
+	return fmt.Sprintf("removed %s from GitHub registration; no local folder action was run", runner.Name)
 }
 
 func AddRunner(options AddRunnerOptions) string {
@@ -149,6 +165,20 @@ func renderRemovePlan(runner Runner, options RemoveRunnerOptions) string {
 	} else {
 		fmt.Fprintf(&b, "- preserve runner folder\n")
 	}
+	fmt.Fprintf(&b, "run with --confirm to execute")
+	return strings.TrimSpace(b.String())
+}
+
+func renderGitHubRemoteRemovePlan(runner Runner) string {
+	var b strings.Builder
+	fmt.Fprintf(&b, "dry-run remove %s for %s via GitHub API\n", runner.Name, runner.Repo)
+	if runner.GitHubID > 0 {
+		fmt.Fprintf(&b, "- GitHub runner id: %d\n", runner.GitHubID)
+	} else {
+		fmt.Fprintf(&b, "- GitHub runner id: unknown; refresh before confirmed removal\n")
+	}
+	fmt.Fprintf(&b, "- no local folder or service action will run\n")
+	fmt.Fprintf(&b, "- unregister with DELETE /repos/%s/actions/runners/{runner_id}\n", runner.Repo)
 	fmt.Fprintf(&b, "run with --confirm to execute")
 	return strings.TrimSpace(b.String())
 }
@@ -281,6 +311,14 @@ func unregisterRunner(runner Runner) error {
 	default:
 		return runLocalRunnerConfig(runner.Path, "remove", []string{"--unattended"}, token)
 	}
+}
+
+func unregisterGitHubRemoteRunner(runner Runner) error {
+	if runner.GitHubID <= 0 {
+		return fmt.Errorf("GitHub runner id is unknown; refresh runner state and try again")
+	}
+	_, err := ghAPIMethod("DELETE", fmt.Sprintf("repos/%s/actions/runners/%d", runner.Repo, runner.GitHubID))
+	return err
 }
 
 func configureRunner(repo string, token string, options AddRunnerOptions) error {

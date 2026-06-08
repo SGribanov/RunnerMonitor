@@ -119,7 +119,6 @@ func TestGitHubRemoteRunnerRowsAreReadOnly(t *testing.T) {
 	checks := []string{
 		RunLifecycle("start", runner),
 		ClearRunner(runner),
-		RemoveRunner(runner, RemoveRunnerOptions{Confirm: true}),
 		OpenLogs(runner),
 	}
 	for _, got := range checks {
@@ -130,6 +129,70 @@ func TestGitHubRemoteRunnerRowsAreReadOnly(t *testing.T) {
 	decision, evidence := AuditRunner(runner)
 	if decision != "keep" || !strings.Contains(evidence, "GitHub-remote") {
 		t.Fatalf("audit = %q/%q", decision, evidence)
+	}
+}
+
+func TestGitHubRemoteRunnerRemoveDryRunUsesGitHubAPI(t *testing.T) {
+	got := RemoveRunner(Runner{
+		Name:        "deltag-win-2",
+		Repo:        "SGribanov/DeltaG",
+		GitHubID:    12345,
+		Transport:   "github-remote",
+		ControlMode: "github-remote",
+		LocalState:  "remote",
+		Path:        "(not local)",
+	}, RemoveRunnerOptions{})
+	for _, want := range []string{
+		"dry-run remove deltag-win-2 for SGribanov/DeltaG via GitHub API",
+		"- GitHub runner id: 12345",
+		"- no local folder or service action will run",
+		"- unregister with DELETE /repos/SGribanov/DeltaG/actions/runners/{runner_id}",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("remote remove dry-run missing %q in:\n%s", want, got)
+		}
+	}
+}
+
+func TestGitHubRemoteRunnerRemoveConfirmDeletesRunnerByID(t *testing.T) {
+	previous := ghAPIMethod
+	var calls []string
+	ghAPIMethod = func(method string, endpoint string) ([]byte, error) {
+		calls = append(calls, method+" "+endpoint)
+		return nil, nil
+	}
+	t.Cleanup(func() {
+		ghAPIMethod = previous
+	})
+
+	got := RemoveRunner(Runner{
+		Name:        "deltag-win-2",
+		Repo:        "SGribanov/DeltaG",
+		GitHubID:    12345,
+		Transport:   "github-remote",
+		ControlMode: "github-remote",
+		LocalState:  "remote",
+		Path:        "(not local)",
+	}, RemoveRunnerOptions{Confirm: true, DeleteFolder: true})
+	if got != "removed deltag-win-2 from GitHub registration; no local folder action was run" {
+		t.Fatalf("RemoveRunner = %q", got)
+	}
+	if len(calls) != 1 || calls[0] != "DELETE repos/SGribanov/DeltaG/actions/runners/12345" {
+		t.Fatalf("ghAPIMethod calls = %#v", calls)
+	}
+}
+
+func TestGitHubRemoteRunnerRemoveConfirmRequiresRunnerID(t *testing.T) {
+	got := RemoveRunner(Runner{
+		Name:        "missing-id",
+		Repo:        "SGribanov/DeltaG",
+		Transport:   "github-remote",
+		ControlMode: "github-remote",
+		LocalState:  "remote",
+		Path:        "(not local)",
+	}, RemoveRunnerOptions{Confirm: true})
+	if !strings.Contains(got, "GitHub runner id is unknown") {
+		t.Fatalf("RemoveRunner should require GitHub runner id, got %q", got)
 	}
 }
 
@@ -459,18 +522,36 @@ func TestCommandRunnerIndexUsesSelectionWhenNumberMissing(t *testing.T) {
 func TestLifecycleCommandStartsStatusRefresh(t *testing.T) {
 	model := NewModel(Inventory{Runners: []Runner{{Name: "runner-1", Repo: "SGribanov/RunnerMonitor"}}})
 	updated, cmd := model.runCommand("start")
-	started, ok := updated.(Model)
+	running, ok := updated.(Model)
 	if !ok {
 		t.Fatalf("updated model has type %T", updated)
 	}
-	if !started.refreshing {
-		t.Fatalf("lifecycle command should mark refresh in progress")
+	if running.refreshing {
+		t.Fatalf("lifecycle command should wait for terminal-managed action result before refresh")
 	}
 	if cmd == nil {
-		t.Fatalf("lifecycle command should return a refresh command")
+		t.Fatalf("lifecycle command should return a terminal-managed command")
 	}
-	if !strings.Contains(started.message, "not service-managed") {
-		t.Fatalf("lifecycle result message should be preserved before refresh, got %q", started.message)
+	if running.message != "start runner-1..." {
+		t.Fatalf("lifecycle command should show running message, got %q", running.message)
+	}
+
+	updated, refreshCmd := running.Update(commandResultMsg{
+		message:      "runner-1 is not service-managed; cannot start",
+		refreshAfter: true,
+	})
+	refreshed, ok := updated.(Model)
+	if !ok {
+		t.Fatalf("updated model has type %T", updated)
+	}
+	if !refreshed.refreshing {
+		t.Fatalf("lifecycle result should mark refresh in progress")
+	}
+	if refreshCmd == nil {
+		t.Fatalf("lifecycle result should return a refresh command")
+	}
+	if !strings.Contains(refreshed.message, "not service-managed") {
+		t.Fatalf("lifecycle result message should be preserved before refresh, got %q", refreshed.message)
 	}
 }
 
@@ -1069,6 +1150,7 @@ func TestRefreshWithGitHubDataAppendsRemoteOnlyRunners(t *testing.T) {
 				runnerKey("SGribanov/DeltaG", "partner-runner"): {
 					Name:    "partner-runner",
 					Repo:    "SGribanov/DeltaG",
+					ID:      12345,
 					OS:      "Linux",
 					Status:  "online",
 					Busy:    true,
@@ -1095,7 +1177,7 @@ func TestRefreshWithGitHubDataAppendsRemoteOnlyRunners(t *testing.T) {
 	if remote == nil {
 		t.Fatalf("remote runner missing: %#v", inventory.Runners)
 	}
-	if !remote.IsGitHubRemote() || remote.Host != "github" || remote.LocalState != "remote" || remote.Path != "(not local)" {
+	if !remote.IsGitHubRemote() || remote.Host != "github" || remote.LocalState != "remote" || remote.Path != "(not local)" || remote.GitHubID != 12345 {
 		t.Fatalf("remote metadata = %#v", *remote)
 	}
 	if remote.Repo != "SGribanov/DeltaG" || remote.GitHubStatus != "online" || !remote.Busy || remote.OS != "Linux" || remote.Version != "2.328.0" {

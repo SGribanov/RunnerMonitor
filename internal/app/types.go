@@ -7,6 +7,7 @@ type Inventory struct {
 type Runner struct {
 	Name            string
 	Repo            string
+	GitHubID        int64
 	OS              string
 	Host            string
 	Path            string

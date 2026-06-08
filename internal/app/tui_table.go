@@ -129,7 +129,7 @@ func tuiHelp(width int, height int) string {
 		"auto-clear on/off clear idle runners after each refresh, or disable it",
 		"logs N            open the runner logs folder",
 		"remove N confirm  unregister a runner; dry-run without confirm",
-		"delete N confirm  unregister a runner and delete its folder when it is under a safe root",
+		"delete N confirm  unregister a runner and delete a safe local folder; remote-only rows unregister only",
 		"connect remote NAME open a saved remote host TUI over SSH",
 		"q, esc, ctrl+c    quit",
 	}
@@ -145,7 +145,7 @@ func tuiHelp(width int, height int) string {
 			"clear N          clear idle runner work files",
 			"logs N           open runner logs",
 			"remove N confirm unregister runner",
-			"delete N confirm unregister and delete safe runner folder",
+			"delete N confirm unregister/delete local or unregister remote",
 			"q/esc/ctrl+c     quit",
 		}
 	}

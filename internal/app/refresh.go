@@ -104,6 +104,7 @@ func remoteOnlyGitHubRunners(statuses map[string]GitHubRunnerStatus, local []Run
 		runners = append(runners, Runner{
 			Name:            status.Name,
 			Repo:            repo,
+			GitHubID:        status.ID,
 			OS:              status.OS,
 			Host:            "github",
 			Path:            "(not local)",

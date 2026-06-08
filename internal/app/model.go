@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 	"time"
@@ -52,8 +53,9 @@ type remoteConnectDoneMsg struct {
 	err  error
 }
 
-type clearResultMsg struct {
-	message string
+type commandResultMsg struct {
+	message      string
+	refreshAfter bool
 }
 
 type updateCheckDoneMsg struct {
@@ -126,7 +128,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.autoClearIdle {
 			m.message = "auto-clear idle runners..."
-			return m, clearIdleRunnersCmd(m.inventory)
+			return m, terminalManagedCommand(func() string {
+				return strings.TrimSpace(ClearIdleRunners(m.inventory))
+			}, false)
 		}
 		return m, nil
 	case spinnerTickMsg:
@@ -148,8 +152,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.message = fmt.Sprintf("remote %s connection closed", msg.name)
 		}
 		return m, nil
-	case clearResultMsg:
+	case commandResultMsg:
 		m.message = msg.message
+		if msg.refreshAfter && !m.refreshing {
+			m.refreshing = true
+			return m, refreshInventoryCmd(refreshCommand)
+		}
 		return m, nil
 	case updateCheckDoneMsg:
 		m.updateNotice = msg.notice
@@ -318,12 +326,16 @@ func (m Model) runCommand(command string) (tea.Model, tea.Cmd) {
 	}
 	if command == "clear idle" {
 		m.message = "clearing idle runners..."
-		return m, clearIdleRunnersCmd(m.inventory)
+		return m, terminalManagedCommand(func() string {
+			return strings.TrimSpace(ClearIdleRunners(m.inventory))
+		}, false)
 	}
 	if command == "auto-clear on" {
 		m.autoClearIdle = true
 		m.message = "auto-clear enabled; clearing idle runners..."
-		return m, clearIdleRunnersCmd(m.inventory)
+		return m, terminalManagedCommand(func() string {
+			return strings.TrimSpace(ClearIdleRunners(m.inventory))
+		}, false)
 	}
 	if command == "auto-clear off" {
 		m.autoClearIdle = false
@@ -358,19 +370,20 @@ func (m Model) runCommand(command string) (tea.Model, tea.Cmd) {
 		if !ok {
 			return m, nil
 		}
-		m.message = RunLifecycle(parts[0], runner)
-		if m.refreshing {
-			return m, nil
-		}
-		m.refreshing = true
-		return m, refreshInventoryCmd(refreshCommand)
+		action := parts[0]
+		m.message = fmt.Sprintf("%s %s...", action, runner.Name)
+		return m, terminalManagedCommand(func() string {
+			return RunLifecycle(action, runner)
+		}, true)
 	case "clear":
 		runner, ok := m.commandRunner(parts)
 		if !ok {
 			return m, nil
 		}
 		m.message = fmt.Sprintf("clearing %s...", runner.Name)
-		return m, clearRunnerCmd(runner)
+		return m, terminalManagedCommand(func() string {
+			return ClearRunner(runner)
+		}, false)
 	case "remove":
 		runner, ok := m.commandRunner(parts)
 		if !ok {
@@ -378,7 +391,9 @@ func (m Model) runCommand(command string) (tea.Model, tea.Cmd) {
 		}
 		confirm := commandHasConfirm(parts)
 		m.message = fmt.Sprintf("removing %s...", runner.Name)
-		return m, removeRunnerCmd(runner, RemoveRunnerOptions{Confirm: confirm})
+		return m, terminalManagedCommand(func() string {
+			return RemoveRunner(runner, RemoveRunnerOptions{Confirm: confirm})
+		}, false)
 	case "delete":
 		runner, ok := m.commandRunner(parts)
 		if !ok {
@@ -389,7 +404,9 @@ func (m Model) runCommand(command string) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.message = fmt.Sprintf("removing %s and deleting folder...", runner.Name)
-		return m, removeRunnerCmd(runner, RemoveRunnerOptions{Confirm: true, DeleteFolder: true})
+		return m, terminalManagedCommand(func() string {
+			return RemoveRunner(runner, RemoveRunnerOptions{Confirm: true, DeleteFolder: true})
+		}, false)
 	case "logs":
 		runner, ok := m.commandRunner(parts)
 		if !ok {
@@ -441,22 +458,32 @@ func isTableNavigationKey(msg tea.KeyMsg) bool {
 	}
 }
 
-func clearRunnerCmd(runner Runner) tea.Cmd {
-	return func() tea.Msg {
-		return clearResultMsg{message: ClearRunner(runner)}
-	}
+type terminalManagedAction struct {
+	run     func() string
+	message string
 }
 
-func clearIdleRunnersCmd(inventory Inventory) tea.Cmd {
-	return func() tea.Msg {
-		return clearResultMsg{message: strings.TrimSpace(ClearIdleRunners(inventory))}
-	}
+func (action *terminalManagedAction) Run() error {
+	action.message = action.run()
+	return nil
 }
 
-func removeRunnerCmd(runner Runner, options RemoveRunnerOptions) tea.Cmd {
-	return func() tea.Msg {
-		return clearResultMsg{message: RemoveRunner(runner, options)}
-	}
+func (action *terminalManagedAction) SetStdin(io.Reader)  {}
+func (action *terminalManagedAction) SetStdout(io.Writer) {}
+func (action *terminalManagedAction) SetStderr(io.Writer) {}
+
+func terminalManagedCommand(run func() string, refreshAfter bool) tea.Cmd {
+	action := &terminalManagedAction{run: run}
+	return tea.Exec(action, func(err error) tea.Msg {
+		message := strings.TrimSpace(action.message)
+		if err != nil {
+			if message != "" {
+				message += "; "
+			}
+			message += fmt.Sprintf("terminal restore failed: %v", err)
+		}
+		return commandResultMsg{message: message, refreshAfter: refreshAfter}
+	})
 }
 
 func refreshInventoryCmd(source refreshSource) tea.Cmd {

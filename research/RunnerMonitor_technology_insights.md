@@ -4,9 +4,41 @@
 |---|---|
 | Project | RunnerMonitor |
 | Type | technology-research |
-| Last updated | 2026-06-07 |
+| Last updated | 2026-06-08 |
 | Status | active |
 | Tags | go, bubble-tea, github-actions, wsl, windows-services |
+
+## 2026-06-08 -- TUI command execution must use Bubble Tea terminal restore
+
+The `v0.5.0` release binary still contains the previous `ESC[0m` plus `ESC(B`
+frame reset, so the font/display regression is not caused by the reset being
+lost from the release. The weaker point is command execution: lifecycle and
+cleanup/remove commands were launched from the TUI through normal model update
+or command callbacks, not Bubble Tea's external execution path.
+
+Bubble Tea `tea.Exec` / `tea.ExecProcess` releases the terminal before running
+external work and restores it when the work completes. RunnerMonitor now wraps
+interactive TUI mutating actions in a custom `tea.Exec` command so service
+control, PowerShell, cmd, WSL, and runner script operations run under
+Bubble Tea's terminal release/restore lifecycle. The existing frame-level text
+mode reset remains as a final rendered-frame guard.
+
+## 2026-06-08 -- Remote-only runner unregister after missing folder
+
+GitHub's repository self-hosted runner REST API supports forced removal with
+`DELETE /repos/{owner}/{repo}/actions/runners/{runner_id}`. This is the right
+repair path when a local runner folder was deleted manually: the usual
+`config.cmd remove` flow cannot run because the folder and scripts are gone,
+but the GitHub registration can still remain visible in
+`repos/<owner>/<repo>/actions/runners`.
+
+RunnerMonitor now preserves the numeric GitHub runner ID returned by the
+repository runner list and uses it only for confirmed removal of
+`github-remote` rows. GitHub-hosted workflow rows remain read-only because they
+are ephemeral job records, not persistent self-hosted runner registrations.
+For remote-only self-hosted rows, `delete ... confirm` intentionally does not
+attempt filesystem deletion; it unregisters the GitHub runner and reports that
+no local folder action was run.
 
 ## 2026-06-07 -- Remote-only self-hosted runner visibility
 
