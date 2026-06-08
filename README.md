@@ -66,7 +66,7 @@ Download the latest ready-to-run Windows package from
 [GitHub Releases](https://github.com/SGribanov/RunnerMonitor/releases/latest):
 
 ```text
-RunnerMonitor-v0.5.0-windows-x64.zip
+RunnerMonitor-v0.5.1-windows-x64.zip
 ```
 
 Extract the ZIP and start the TUI:
@@ -191,9 +191,11 @@ Self-hosted runners returned by GitHub for monitored repositories also appear
 when no matching local runner folder is discovered. These partner or otherwise
 remote rows use `github` as host, `remote` as local state, and `(not local)` as
 path. They expose GitHub status, busy state, labels, OS, version, and queue
-counts, but local lifecycle, cleanup, logs, remove, delete, and reprovision
-commands are skipped because RunnerMonitor cannot control another machine's
-runner folder or service.
+counts. Local lifecycle, cleanup, logs, and reprovision commands are skipped
+because RunnerMonitor cannot control another machine's runner folder or
+service. `remove [N] confirm` and `delete [N] confirm` can unregister these
+remote-only self-hosted runner registrations through GitHub API after explicit
+confirmation; no local folder or service action is attempted.
 
 On startup, the TUI performs one best-effort GitHub Releases check through
 `gh`. If the internet is unavailable or the check fails, RunnerMonitor starts
@@ -220,7 +222,7 @@ help is closed, `Esc` exits the TUI.
 | `auto-clear off` | Disable refresh-triggered auto cleanup. |
 | `remove [N]` | Dry-run GitHub runner unregistration for runner `N` or selected row. |
 | `remove [N] confirm` | Execute runner unregistration after confirmation. |
-| `delete [N] confirm` | Unregister and delete a safe runner folder. |
+| `delete [N] confirm` | Unregister and delete a safe runner folder; for remote-only GitHub rows, unregister only. |
 | `logs [N]` | Open runner logs for runner `N` or selected row. |
 | `connect remote NAME` | Open the saved remote RunnerMonitor TUI over SSH. |
 | `q`, `quit`, `exit`, `Esc`, `Ctrl+C` | Exit the TUI. |

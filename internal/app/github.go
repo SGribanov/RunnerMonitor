@@ -14,6 +14,7 @@ import (
 type GitHubRunnerStatus struct {
 	Name    string
 	Repo    string
+	ID      int64
 	OS      string
 	Status  string
 	Busy    bool
@@ -28,6 +29,7 @@ type QueueStatus struct {
 
 type runnersResponse struct {
 	Runners []struct {
+		ID      int64  `json:"id"`
 		Name    string `json:"name"`
 		OS      string `json:"os"`
 		Status  string `json:"status"`
@@ -79,6 +81,7 @@ func LoadGitHubStatus(repos []string) (map[string]GitHubRunnerStatus, map[string
 			statuses[runnerKey(repo, runner.Name)] = GitHubRunnerStatus{
 				Name:    runner.Name,
 				Repo:    repo,
+				ID:      runner.ID,
 				OS:      runner.OS,
 				Status:  runner.Status,
 				Busy:    runner.Busy,
@@ -168,11 +171,11 @@ func cloneQueues(queues map[string]QueueStatus) map[string]QueueStatus {
 	return clone
 }
 
-func ghAPI(endpoint string) ([]byte, error) {
+var ghAPI = func(endpoint string) ([]byte, error) {
 	return exec.Command("gh", "api", endpoint).Output()
 }
 
-func ghAPIMethod(method string, endpoint string) ([]byte, error) {
+var ghAPIMethod = func(method string, endpoint string) ([]byte, error) {
 	return exec.Command("gh", "api", "-X", method, endpoint).Output()
 }
 
