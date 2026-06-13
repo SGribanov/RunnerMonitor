@@ -4,9 +4,18 @@
 |---|---|
 | Project | RunnerMonitor |
 | Type | strategy-research |
-| Last updated | 2026-06-04 |
+| Last updated | 2026-06-13 |
 | Status | active |
 | Tags | ci-runners, github-actions, tui, operations |
+
+## 2026-06-13 -- MyClone runner capacity restored before workflow migration
+
+The immediate operational requirement for `SGribanov/MyCloneOsEngine` was to
+restore a repository-linked Linux self-hosted runner analogous to DeltaG's WSL
+runner capacity. That is now satisfied by `mycloneosengine-linux` on WSL. The
+workflow migration remains a separate decision because current MyClone Linux
+jobs use GitHub-hosted `ubuntu-latest`, and the Docker job should not be moved
+to the WSL runner until Docker availability on that host is verified.
 
 ## 2026-06-03 -- Monitoring goal
 

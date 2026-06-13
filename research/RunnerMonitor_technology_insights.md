@@ -4,9 +4,27 @@
 |---|---|
 | Project | RunnerMonitor |
 | Type | technology-research |
-| Last updated | 2026-06-08 |
+| Last updated | 2026-06-13 |
 | Status | active |
 | Tags | go, bubble-tea, github-actions, wsl, windows-services |
+
+## 2026-06-13 -- MyClone Linux runner recreated after missing binding
+
+`SGribanov/MyCloneOsEngine` had only `mycloneosengine-windows-local` registered
+in GitHub; the previous WSL/Linux runner folder was no longer present in the
+canonical WSL runner root. A fresh Actions runner `2.335.1` was installed under
+`/home/gsv777/Runners/SGribanov-MyCloneOsEngine/mycloneosengine-linux`, registered
+to `https://github.com/SGribanov/MyCloneOsEngine` with `config.sh --replace`,
+and installed as the systemd unit
+`actions.runner.SGribanov-MyCloneOsEngine.mycloneosengine-linux.service`.
+
+GitHub assigned the recreated runner id `25`. It reports `online`,
+`busy=false`, OS `Linux`, version `2.335.1`, and labels
+`self-hosted,X64,Linux,mycloneosengine,local`. RunnerMonitor discovers it as
+`Host=wsl:Ubuntu`, `Local=active`, path
+`/home/gsv777/Runners/SGribanov-MyCloneOsEngine/mycloneosengine-linux`.
+The MyClone workflow still routes Linux and Docker jobs to `ubuntu-latest`; a
+separate workflow change is needed before CI jobs consume this runner.
 
 ## 2026-06-08 -- TUI command execution must use Bubble Tea terminal restore
 
