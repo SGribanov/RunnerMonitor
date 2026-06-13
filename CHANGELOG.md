@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-06-13
+
+### Added
+
+- TUI commands `start all` and `stop all` now run the existing lifecycle
+  control flow for every controllable runner in the current inventory.
+- In-app help and English/Russian README command references document the new
+  all-runner lifecycle commands.
+
 ## [0.5.1] - 2026-06-08
 
 ### Fixed
@@ -168,7 +177,8 @@
 - Release ZIP includes only a sanitized default config with an empty
   `wslSudoPassword`.
 
-[Unreleased]: https://github.com/SGribanov/RunnerMonitor/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/SGribanov/RunnerMonitor/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/SGribanov/RunnerMonitor/compare/v0.5.1...v0.6.0
 [0.5.1]: https://github.com/SGribanov/RunnerMonitor/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/SGribanov/RunnerMonitor/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/SGribanov/RunnerMonitor/compare/v0.3.4...v0.4.0

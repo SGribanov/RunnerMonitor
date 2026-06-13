@@ -555,6 +555,42 @@ func TestLifecycleCommandStartsStatusRefresh(t *testing.T) {
 	}
 }
 
+func TestAllLifecycleCommandStartsStatusRefresh(t *testing.T) {
+	model := NewModel(Inventory{Runners: []Runner{
+		{Name: "runner-1", Repo: "SGribanov/RunnerMonitor", ServiceName: "svc-1", ControlMode: "unsupported"},
+		{Name: "runner-2", Repo: "SGribanov/RunnerMonitor", ServiceName: "svc-2", ControlMode: "unsupported"},
+	}})
+	updated, cmd := model.runCommand("start all")
+	running, ok := updated.(Model)
+	if !ok {
+		t.Fatalf("updated model has type %T", updated)
+	}
+	if running.refreshing {
+		t.Fatalf("all lifecycle command should wait for terminal-managed action result before refresh")
+	}
+	if cmd == nil {
+		t.Fatalf("all lifecycle command should return a terminal-managed command")
+	}
+	if running.message != "start all runners..." {
+		t.Fatalf("all lifecycle command should show running message, got %q", running.message)
+	}
+
+	updated, refreshCmd := running.Update(commandResultMsg{
+		message:      "start all completed",
+		refreshAfter: true,
+	})
+	refreshed, ok := updated.(Model)
+	if !ok {
+		t.Fatalf("updated model has type %T", updated)
+	}
+	if !refreshed.refreshing {
+		t.Fatalf("all lifecycle result should mark refresh in progress")
+	}
+	if refreshCmd == nil {
+		t.Fatalf("all lifecycle result should return a refresh command")
+	}
+}
+
 func TestRefreshCommandPreservesLifecycleMessage(t *testing.T) {
 	model := NewModel(Inventory{Runners: []Runner{{Name: "runner-1", Repo: "SGribanov/RunnerMonitor"}}})
 	model.message = "stop runner-1 requested in elevated PowerShell"
@@ -1292,6 +1328,23 @@ func TestRunRepoLifecycleSkipsManualRunner(t *testing.T) {
 	}}})
 	if got != "skip manual: not controllable\nno controllable runners found for SGribanov/RunnerMonitor\n" {
 		t.Fatalf("RunRepoLifecycle = %q", got)
+	}
+}
+
+func TestRunAllLifecycleControlsAllControllableRunners(t *testing.T) {
+	got := RunAllLifecycle("stop", Inventory{Runners: []Runner{
+		{Name: "svc", Repo: "SGribanov/RunnerMonitor", ServiceName: "svc-1", ControlMode: "unsupported"},
+		{Name: "manual", Repo: "SGribanov/RunnerMonitor"},
+		{Name: "hosted", Repo: "SGribanov/RunnerMonitor", Transport: "github-hosted", ControlMode: "github-hosted"},
+	}})
+	for _, want := range []string{
+		"stop svc failed: stop service svc-1: unsupported control mode \"unsupported\"",
+		"skip manual: not controllable",
+		"skip hosted: GitHub-hosted read-only",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("RunAllLifecycle missing %q in:\n%s", want, got)
+		}
 	}
 }
 
