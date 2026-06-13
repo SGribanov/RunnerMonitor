@@ -366,6 +366,13 @@ func (m Model) runCommand(command string) (tea.Model, tea.Cmd) {
 
 	switch parts[0] {
 	case "start", "stop", "restart", "force-stop", "force-restart":
+		if len(parts) == 2 && parts[1] == "all" && (parts[0] == "start" || parts[0] == "stop") {
+			action := parts[0]
+			m.message = fmt.Sprintf("%s all runners...", action)
+			return m, terminalManagedCommand(func() string {
+				return strings.TrimSpace(RunAllLifecycle(action, m.inventory))
+			}, true)
+		}
 		runner, ok := m.commandRunner(parts)
 		if !ok {
 			return m, nil

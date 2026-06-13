@@ -1,6 +1,6 @@
 package app
 
 const (
-	CurrentVersion = "v0.5.1"
+	CurrentVersion = "v0.6.0"
 	ReleaseRepo    = "SGribanov/RunnerMonitor"
 )

@@ -336,6 +336,27 @@ func RunRepoLifecycle(action string, repo string, inventory Inventory) string {
 	return b.String()
 }
 
+func RunAllLifecycle(action string, inventory Inventory) string {
+	var b strings.Builder
+	count := 0
+	for _, runner := range inventory.Runners {
+		if runner.IsReadOnlyGitHubRow() {
+			fmt.Fprintf(&b, "skip %s: %s read-only\n", runner.Name, runnerReadOnlyKind(runner))
+			continue
+		}
+		if runner.ServiceName == "" && !(runner.ControlMode == "manual" && runner.Transport == "windows") {
+			fmt.Fprintf(&b, "skip %s: not controllable\n", runner.Name)
+			continue
+		}
+		count++
+		fmt.Fprintf(&b, "%s\n", RunLifecycle(action, runner))
+	}
+	if count == 0 {
+		fmt.Fprintf(&b, "no controllable runners found\n")
+	}
+	return b.String()
+}
+
 func runnerReadOnlyKind(runner Runner) string {
 	if runner.IsGitHubHosted() {
 		return "GitHub-hosted"

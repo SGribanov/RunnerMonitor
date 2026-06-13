@@ -66,7 +66,7 @@ Download the latest ready-to-run Windows package from
 [GitHub Releases](https://github.com/SGribanov/RunnerMonitor/releases/latest):
 
 ```text
-RunnerMonitor-v0.5.1-windows-x64.zip
+RunnerMonitor-v0.6.0-windows-x64.zip
 ```
 
 Extract the ZIP and start the TUI:
@@ -213,6 +213,8 @@ help is closed, `Esc` exits the TUI.
 | Arrow keys | Select a runner row. |
 | `start [N]` | Start runner `N`, or the selected runner if `N` is omitted. |
 | `stop [N]` | Stop runner `N`, or the selected runner if `N` is omitted. |
+| `start all` | Start every controllable runner in the current inventory. |
+| `stop all` | Stop every controllable runner in the current inventory. |
 | `restart [N]` | Restart runner `N`, or the selected runner if `N` is omitted. |
 | `force-stop [N]` | Stop even when GitHub reports the runner as busy. Use carefully. |
 | `force-restart [N]` | Restart even when GitHub reports the runner as busy. Use carefully. |
@@ -232,7 +234,7 @@ before the main project, runner, status, busy, and queue columns are allowed to
 drift. In the TUI table, the `Busy` column uses plain `true`/`false` text so
 status columns stay aligned and readable.
 
-After lifecycle commands such as `start`, `stop`, and `restart`, the TUI starts
+After lifecycle commands such as `start`, `stop`, `start all`, `stop all`, and `restart`, the TUI starts
 an immediate status refresh so the table catches up with the service and GitHub
 state without waiting for the next auto-refresh tick. The command input accepts
 `d` as the first typed character, so `delete N confirm` can be typed normally.

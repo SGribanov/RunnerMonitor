@@ -101,9 +101,9 @@ func tableHeight(windowHeight int) int {
 }
 
 func commandHelp(width int) string {
-	long := "Commands: h/? help | refresh | start [N] | stop [N] | restart [N] | force-stop [N] | clear [N] | remove [N] [confirm] | delete [N] confirm | clear idle | auto-clear on/off | logs [N] | connect remote NAME | q"
-	short := "Commands: h/? help | refresh | start/stop/restart/clear/logs [N] | remove/delete [N] confirm | connect remote NAME | q"
-	tiny := "Commands: h help | refresh | start/stop/clear/logs [N] | q"
+	long := "Commands: h/? help | refresh | start [N]/all | stop [N]/all | restart [N] | force-stop [N] | clear [N] | remove [N] [confirm] | delete [N] confirm | clear idle | auto-clear on/off | logs [N] | connect remote NAME | q"
+	short := "Commands: h/? help | refresh | start/stop/all/restart/clear/logs [N] | remove/delete [N] confirm | connect remote NAME | q"
+	tiny := "Commands: h help | refresh | start/stop/all/clear/logs [N] | q"
 	if width < 100 {
 		return tiny
 	}
@@ -121,6 +121,7 @@ func tuiHelp(width int, height int) string {
 		"h, ?, help        show or hide this help",
 		"refresh           refresh local and GitHub runner state",
 		"start/stop N      start or stop a controllable runner",
+		"start/stop all    start or stop every controllable runner",
 		"restart N         restart a controllable runner",
 		"force-stop N      stop a busy runner when you intentionally override the busy check",
 		"force-restart N   restart a busy runner when you intentionally override the busy check",
@@ -141,6 +142,7 @@ func tuiHelp(width int, height int) string {
 			"h/? help         toggle help",
 			"refresh          refresh runner state",
 			"start/stop N     control runner",
+			"start/stop all   control every runner",
 			"restart N        restart runner",
 			"clear N          clear idle runner work files",
 			"logs N           open runner logs",
